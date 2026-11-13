@@ -6,477 +6,416 @@
 <title>Classical Codex</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<!--
+  v2 engineering notes (on top of the sovereign-ui v5 derivation already in
+  this file's visual language, unchanged below):
+
+  - Manifest is no longer a hardcoded path. A static page cannot list a
+    directory, so "auto-discovery" means probing a candidate list of common
+    filenames, parsing each, and keeping the first one that actually yields
+    entries. The resolved path is cached and overridable in Settings.
+  - AI calls now go through a list of provider profiles (OpenAI-compatible
+    base+key+model each), tried in order, so one dead/rate-limited provider
+    doesn't block a description. AI cache is keyed by work+model, so
+    switching models doesn't serve a stale answer from a different model.
+  - Apple Music links are real deep links (iTunes Search API, keyless, safe
+    client-side). Spotify and YouTube Music deep links to the *exact* album
+    require either an OAuth client-secret exchange (Spotify) or a server-side
+    key (YouTube Data API) -- neither can be done safely from a single static
+    HTML file, since any secret embedded in client JS is public. Rather than
+    fake that, both are optional: paste a short-lived Spotify token or a
+    restricted YouTube Data API key in Settings and real links resolve;
+    without one, the link is a labeled, honest search URL instead.
+-->
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   DESIGN DERIVATION — Victorian concert-programme / engraved
-   library codex. Double-rule borders, corner fleurons, drop
-   caps, diamond dividers. Ornament marks structure, never fills
-   emptiness. Palette extends the original print-codex tones;
-   no new typefaces, no gothic/blackletter costume.
-   ============================================================ */
-:root,
-:root[data-theme="light"],
-:root[data-theme="dark"] {
-  /* Single dark register only — per brief: "as dark as possible," no light mode.
-     Derivation: tooled morocco-leather bookbinding + brass fittings + gaslight,
-     not parchment/paper. Ground is leather-umber, never pure #000. */
-  color-scheme: dark;
-  --void:        #0A0806;
-  --surface:     #120D09;
-  --surface-raised: #19130D;
-  --surface-hi:  #221A11;
-  --border:      #352717;
-  --border-hi:   #6B4E2E;
-  --shadow:      none;
-  --divider:     #2E2214;
-  --text-primary:   #E8DCC4;
-  --text-secondary: #B5A078;
-  --text-dim:       #786547;
-  --text-inverse:   #0A0806;
-  --accent-primary:   #A8303A;
-  --accent-secondary: #C9962E;
-  --accent-tertiary:  #4A6B5C;
-  --accent-forge:     #4A6B5C;
-  --accent-gilt:      #D9AE4E;
-  --accent-critical:  #C0414C;
-  --accent-primary-dim:   rgba(168,48,58,.16);
-  --accent-secondary-dim: rgba(201,150,46,.14);
-  --accent-tertiary-dim:  rgba(74,107,92,.16);
-  --accent-forge-dim:     rgba(74,107,92,.16);
-  --accent-critical-dim:  rgba(192,65,76,.16);
-}
 :root {
-  --chrome: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
-  --body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-  --radius: 0;
-  --ease: ease-out;
-  --dur-fast: 90ms;
-  --dur: 140ms;
-  --dur-slow: 160ms;
-
-  --sp-1: clamp(4px,1vw,4px); --sp-2: clamp(6px,1.5vw,8px); --sp-3: clamp(8px,2vw,12px);
-  --sp-4: clamp(10px,2.5vw,16px); --sp-5: clamp(14px,3vw,24px); --sp-6: clamp(18px,4vw,32px);
-  --t-xs: clamp(10px,1.4vw,11px); --t-sm: clamp(11px,1.6vw,13px); --t-md: clamp(13px,1.8vw,14px);
-  --t-body: clamp(14px,2vw,16px); --t-title: clamp(17px,2.4vw,20px); --t-lg: clamp(19px,3vw,25px);
-  --t-disp: clamp(26px,4.5vw,40px);
+  --wall: #1c2a20;
+  --wall-dark: #11190f;
+  --cabinet-back: #26382c;
+  --frame-wood: #3a2415;
+  --paper: #ecdfc2;
+  --paper-lit: #f4e9cf;
+  --paper-edge: #c3ac7c;
+  --ink-fresh: #221a10;
+  --ink-oxidized: #5e3f22;
+  --ink-faint: #8c6c45;
+  --gilt: #9c7530;
+  --gilt-catch: #cb9f4e;
+  --gilt-shadow: #6b4e1f;
+  --wax: #93271b;
+  --wax-catch: #bb4530;
+  --wax-shadow: #601910;
+  --verdigris: #52735a;
+  --verdigris-dim: #37503c;
+  --text-primary: var(--ink-fresh);
+  --text-secondary: var(--ink-oxidized);
+  --text-dim: var(--ink-faint);
+  --text-inverse: var(--paper-lit);
+  --chrome: 'EB Garamond', 'Times New Roman', serif;
+  --body: 'Cormorant Garamond', 'EB Garamond', serif;
+  --radius: 2px;
+  --radius-lg: 3px;
+  --ease: cubic-bezier(.22,.61,.36,1);
+  color-scheme: light;
 }
-
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
   margin: 0;
-  background: var(--void);
+  background:
+    radial-gradient(ellipse 820px 640px at 18% -6%, rgba(203,159,78,.10) 0%, transparent 58%),
+    linear-gradient(155deg, var(--wall) 0%, var(--wall-dark) 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
-  font: var(--t-body)/1.6 var(--body);
+  font: 500 17px/1.55 var(--body);
   -webkit-font-smoothing: antialiased;
-  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
-button:disabled { cursor: default; opacity: .4; }
 button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid var(--accent-tertiary); outline-offset: 2px;
+  outline: 2px solid var(--wax-catch); outline-offset: 2px; border-radius: 1px;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-#app { max-width: 820px; margin: 0 auto; padding: var(--sp-6) var(--sp-4) 72px; }
+#app { max-width: 820px; margin: 0 auto; padding: 52px 20px 84px; }
 
-/* ---- engraved frame: double-rule border with corner fleurons ---- */
-.engraved-frame {
-  position: relative;
-  border: 1px solid var(--border-hi);
-  padding: var(--sp-5) var(--sp-5);
-  margin-bottom: var(--sp-5);
-}
-.engraved-frame::before {
-  content: '';
-  position: absolute; inset: 5px;
-  border: 1px solid var(--border-hi);
-  pointer-events: none;
-}
-.fleuron {
-  position: absolute; width: 16px; height: 16px;
-  color: var(--accent-gilt); font: var(--t-md) var(--chrome);
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: none; opacity: .85;
-}
-.fleuron.tl { top: -1px; left: -1px; }
-.fleuron.tr { top: -1px; right: -1px; }
-.fleuron.bl { bottom: -1px; left: -1px; }
-.fleuron.br { bottom: -1px; right: -1px; }
-
-/* ---- masthead ---- */
 header.top {
-  display: flex; align-items: flex-end; gap: var(--sp-4); flex-wrap: wrap;
-  position: relative;
+  display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 30px;
+  padding: 18px 20px 16px; border-radius: var(--radius-lg);
+  background: linear-gradient(165deg, var(--cabinet-back), var(--wall-dark));
+  box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 6px 14px -6px rgba(0,0,0,.55);
+  border: 1px solid rgba(156,117,48,.25);
 }
-.logo {
-  margin: 0; font: 600 var(--t-disp) var(--chrome); letter-spacing: .01em;
-  color: var(--text-primary); font-variant: small-caps;
-}
-.logo .dinkus { color: var(--accent-gilt); margin-right: var(--sp-2); font-size: .7em; }
+.logo { margin: 0; font: 600 28px/1 var(--chrome); letter-spacing: .01em; color: var(--paper-lit); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.logo .sub { display: block; font: italic 500 13px var(--body); color: var(--gilt-catch); letter-spacing: .03em; margin-top: 4px; }
 .spacer { flex: 1; }
 .counter-pill {
-  font: 600 var(--t-sm) var(--chrome); color: var(--text-secondary);
-  padding-bottom: 6px; letter-spacing: .02em;
+  font: 600 14px var(--chrome); color: var(--wall-dark);
+  background: linear-gradient(160deg, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow));
+  border-radius: var(--radius); padding: 7px 15px;
+  display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 2px 5px rgba(0,0,0,.4);
 }
-.counter-pill b { color: var(--accent-secondary); font-weight: 700; }
+.counter-pill b { font-weight: 700; }
 .icon-btn {
-  min-width: 44px; min-height: 36px; padding: 0 var(--sp-3);
-  border: 1px solid var(--border-hi); color: var(--text-secondary);
-  display: inline-flex; align-items: center; gap: 6px;
-  font: 600 var(--t-sm) var(--chrome);
-  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  min-width: 44px; min-height: 44px; border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--gilt-catch), var(--gilt) 58%, var(--gilt-shadow));
+  display: grid; place-items: center; color: var(--wall-dark);
+  box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 2px 5px rgba(0,0,0,.45);
+  transition: transform 180ms var(--ease), box-shadow 180ms var(--ease);
 }
-.icon-btn:hover { color: var(--accent-primary); border-color: var(--accent-primary); }
-.icon-btn[aria-pressed="true"] { background: var(--text-primary); color: var(--surface); border-color: var(--text-primary); }
-.icon-btn.gilt:hover { color: var(--accent-gilt); border-color: var(--accent-gilt); }
+.icon-btn:hover { transform: translateY(-1px) rotate(-10deg); box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 4px 9px rgba(0,0,0,.5); }
+.icon-btn:active { transform: translateY(0) rotate(0) scale(.95); }
+.icon-btn.small { min-width: 32px; min-height: 32px; }
 
-/* ---- diamond divider ---- */
-.diamond-rule {
-  display: flex; align-items: center; gap: var(--sp-3);
-  margin: var(--sp-2) 0 var(--sp-4); color: var(--border-hi);
-}
-.diamond-rule::before, .diamond-rule::after { content: ''; flex: 1; height: 1px; background: var(--divider); }
-.diamond-rule span { font-size: 10px; transform: rotate(45deg); display: inline-block; border: 1px solid var(--border-hi); width: 7px; height: 7px; }
-
-/* ---- toolbar ---- */
-.toolbar { margin-bottom: var(--sp-3); display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
-.toolbar .search-wrap { flex: 1 1 220px; position: relative; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
 .toolbar input[type="search"] {
-  width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border-hi);
-  color: var(--text-primary); font: italic var(--t-body) var(--body);
-  padding: var(--sp-2) 0; transition: border-color var(--dur-fast) var(--ease);
+  flex: 1 1 200px; min-width: 0; color: var(--ink-fresh); font: 500 17px var(--body); font-style: italic;
+  padding: 12px 18px; min-height: 46px; border-radius: var(--radius);
+  background: linear-gradient(115deg, rgba(255,255,255,.14) 0%, transparent 30%), linear-gradient(180deg, var(--paper-lit), var(--paper));
+  border: 1px solid rgba(156,117,48,.4);
+  box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 10px -3px rgba(0,0,0,.5);
+  transition: box-shadow 180ms var(--ease), border-color 180ms var(--ease);
 }
-.toolbar input[type="search"]::placeholder { color: var(--text-dim); }
-.toolbar input[type="search"]:focus { outline: none; border-color: var(--accent-primary); }
-.sort-select {
-  background: transparent; border: none; border-bottom: 1px solid var(--border-hi);
-  color: var(--text-secondary); font: 600 var(--t-sm) var(--chrome); padding: var(--sp-2) var(--sp-1);
-  letter-spacing: .02em;
+.toolbar input[type="search"]::placeholder { color: var(--text-dim); font-style: italic; }
+.toolbar input[type="search"]:focus {
+  outline: none; border-color: var(--wax);
+  box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 10px -3px rgba(0,0,0,.5), 0 0 0 3px rgba(147,39,27,.2);
 }
-.sort-select:focus { outline: none; border-color: var(--accent-primary); }
 
-/* ---- filter rows ---- */
-.chiprow { display: flex; gap: var(--sp-4); flex-wrap: wrap; margin-bottom: var(--sp-3); padding-bottom: var(--sp-2); }
-.chiprow + .chiprow { margin-top: -4px; border-bottom: 1px solid var(--divider); margin-bottom: var(--sp-5); }
+.chiprow { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 16px; }
 .chip {
-  font: 600 var(--t-sm) var(--chrome); letter-spacing: .03em; text-transform: uppercase;
-  color: var(--text-dim); padding-bottom: 4px; border-bottom: 2px solid transparent;
-  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 15px; border-radius: 16px;
+  background: var(--cabinet-back); border: 1px solid rgba(156,117,48,.3); color: var(--paper);
+  font: 500 14px var(--chrome); letter-spacing: .01em;
+  box-shadow: 0 2px 4px rgba(0,0,0,.35);
+  transition: color 160ms var(--ease), box-shadow 160ms var(--ease), transform 160ms var(--ease), border-color 160ms var(--ease);
 }
-.chip:hover { color: var(--text-secondary); }
-.chip.active { color: var(--accent-primary); border-color: var(--accent-primary); }
-.chip.status-owned.active { color: var(--accent-secondary); border-color: var(--accent-secondary); }
-.chip .count { color: var(--text-dim); font-weight: 500; }
-
-/* ---- source picker (multi-file) ---- */
-.source-row { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: center; margin-bottom: var(--sp-3); }
-.source-row .label { font: 600 var(--t-xs) var(--chrome); letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
-.source-chip {
-  font: 600 var(--t-xs) var(--chrome); padding: 3px 8px; border: 1px solid var(--border-hi);
-  color: var(--text-secondary); letter-spacing: .02em;
-  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+.chip:hover { color: var(--gilt-catch); transform: translateY(-1px); border-color: var(--gilt); }
+.chip.active {
+  color: var(--paper-lit); background: radial-gradient(circle at 32% 28%, var(--wax-catch), var(--wax) 55%, var(--wax-shadow));
+  border-color: transparent;
+  box-shadow: 0 1px 0 rgba(255,255,255,.2) inset, 0 3px 7px rgba(0,0,0,.45);
 }
-.source-chip.active { background: var(--accent-forge-dim); color: var(--accent-forge); border-color: var(--accent-forge); }
-.source-chip .fmt { color: var(--text-dim); font-style: italic; font-weight: 500; margin-left: 4px; }
+.chip .count { opacity: .72; font-variant-numeric: oldstyle-nums; }
+.chip.status-owned.active { background: radial-gradient(circle at 32% 28%, var(--wax-catch), var(--wax) 55%, var(--wax-shadow)); }
+.chip.status-wanted.active { background: radial-gradient(circle at 32% 28%, #7fa186, var(--verdigris) 55%, var(--verdigris-dim)); }
 
-/* ---- banner ---- */
 .state-banner {
-  border: 1px solid var(--border-hi); padding: var(--sp-3) var(--sp-4);
-  margin-bottom: var(--sp-5); display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
-  font: italic var(--t-sm) var(--body); color: var(--text-secondary);
+  border-radius: var(--radius); padding: 13px 18px; background: var(--cabinet-back);
+  margin-bottom: 18px; display: flex; align-items: center; gap: 12px; font: 500 15px var(--body); color: var(--paper);
+  border-left: 3px solid var(--gilt); box-shadow: 0 2px 6px rgba(0,0,0,.35);
 }
-.state-banner.error { color: var(--accent-critical); border-color: var(--accent-critical); }
-.state-banner.notice { color: var(--accent-forge); border-color: var(--accent-forge); }
-.state-banner button { color: var(--accent-tertiary); font-weight: 600; text-decoration: underline; flex: none; }
+.state-banner.error { color: #e8c4bb; border-left-color: var(--wax); background: #2e1612; }
+.state-banner button { color: var(--gilt-catch); font-weight: 600; min-height: 40px; display: inline-flex; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
 
-/* ---- skeleton ---- */
-.skeleton-section { margin-bottom: var(--sp-6); }
-.skeleton-head { width: 220px; height: 14px; background: var(--border); margin-bottom: var(--sp-3); animation: pulse 1.5s ease-in-out infinite; }
-.skeleton-row { height: 56px; border-bottom: 1px solid var(--divider); background: var(--surface-raised); margin-bottom: var(--sp-2); animation: pulse 1.5s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+.skeleton-section { margin-bottom: 32px; }
+.skeleton-head { width: 220px; height: 15px; border-radius: 2px; background: var(--cabinet-back); margin-bottom: 12px; animation: pulse 1.6s ease-in-out infinite; }
+.skeleton-row { height: 64px; border-radius: var(--radius); background: var(--cabinet-back); margin-bottom: 10px; animation: pulse 1.6s ease-in-out infinite; border: 1px solid rgba(156,117,48,.2); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
 
-/* ---- stats panel ---- */
-.stats-panel {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--sp-4);
-  margin-bottom: var(--sp-5); padding: var(--sp-4) var(--sp-5); border: 1px solid var(--divider);
-}
-.stat { text-align: center; }
-.stat .num { display: block; font: 600 var(--t-lg) var(--chrome); color: var(--accent-primary); }
-.stat .lbl { font: 600 var(--t-xs) var(--chrome); letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
-
-/* ---- era section ---- */
-.era-section { margin-bottom: var(--sp-6); opacity: 0; animation: era-in var(--dur-slow) var(--ease) forwards; }
-@keyframes era-in { from { opacity: 0; } to { opacity: 1; } }
+.era-section { margin-bottom: 34px; opacity: 0; animation: era-in 420ms var(--ease) forwards; }
+@keyframes era-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .era-head {
-  display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-3); flex-wrap: wrap;
-  border-bottom: 1px solid var(--divider); padding-bottom: var(--sp-2);
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 14px 18px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: linear-gradient(160deg, var(--frame-wood), #26160c);
+  border: 1px solid var(--gilt-shadow); border-bottom: none;
+  box-shadow: 3px 10px 18px -8px rgba(0,0,0,.6);
 }
-.era-head h2 { margin: 0; font: 600 var(--t-lg) var(--chrome); color: var(--text-primary); }
-.era-head h2::before { content: '❧'; color: var(--accent-primary); margin-right: var(--sp-2); font-size: .8em; }
-.era-dates { font: italic var(--t-sm) var(--body); color: var(--text-dim); }
-.era-progress { font: 600 var(--t-xs) var(--chrome); letter-spacing: .03em; color: var(--text-secondary); margin-left: auto; }
+.era-head h2 { margin: 0; font: 600 20px var(--chrome); color: var(--paper-lit); letter-spacing: .02em; }
+.era-dates { font: italic 500 13px var(--body); color: var(--gilt-catch); }
+.era-progress { font: 600 12px var(--chrome); color: var(--wall-dark); background: var(--gilt-catch); border-radius: 10px; padding: 3px 11px; margin-left: auto; }
+@media (max-width: 520px) { .era-progress { margin-left: 0; } }
 
-/* ---- drop cap on first composer strip of each era ---- */
-.composer-strip.drop .composer-name::first-letter {
-  font-size: 2.1em; color: var(--accent-primary); font-weight: 700;
-  float: left; line-height: .78; margin-right: 2px;
-}
-
-/* ---- work list / composer portraits ---- */
-.work-list { display: flex; flex-direction: column; }
-.composer-strip {
-  display: flex; align-items: center; gap: var(--sp-3); margin: var(--sp-4) 0 var(--sp-2);
-}
-.composer-strip:first-child { margin-top: 0; }
-.portrait {
-  flex: none; width: 40px; height: 40px; border: 1px solid var(--border-hi);
-  background: var(--surface-raised); position: relative; overflow: hidden;
-}
-.portrait img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity var(--dur-slow) var(--ease); }
-.portrait img.loaded { opacity: 1; }
-.portrait .monogram {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  font: 600 15px var(--chrome); color: var(--accent-tertiary); background: var(--accent-tertiary-dim);
-}
-.composer-name { font: 600 var(--t-title) var(--chrome); color: var(--text-primary); font-variant: small-caps; letter-spacing: .02em; }
+.work-list { display: flex; flex-direction: column; gap: 1px; padding: 10px; background: var(--frame-wood); border: 1px solid var(--gilt-shadow); border-top: none; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
 
 .work-card {
-  padding: var(--sp-3) 0; border-bottom: 1px solid var(--divider);
-  opacity: 0; animation: card-in var(--dur-slow) var(--ease) forwards;
-  display: flex; gap: var(--sp-3); align-items: flex-start;
+  background: var(--paper); border-radius: var(--radius);
+  padding: 15px 17px; margin: 3px;
+  box-shadow: 1px 6px 10px -3px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.4) inset;
+  transition: box-shadow 200ms var(--ease), transform 200ms var(--ease);
+  opacity: 0; animation: card-in 320ms var(--ease) forwards;
 }
-@keyframes card-in { from { opacity: 0; } to { opacity: 1; } }
-.work-card .bulk-check {
-  flex: none; width: 16px; height: 16px; margin-top: 8px;
-  border: 1px solid var(--border-hi); background: var(--surface);
-  display: none; align-items: center; justify-content: center;
-}
-.bulk-mode .work-card .bulk-check { display: flex; }
-.work-card .bulk-check.checked { background: var(--accent-forge-dim); border-color: var(--accent-forge); }
-.work-card .bulk-check.checked::after { content: '✓'; color: var(--accent-forge); font-size: 11px; font-weight: 700; }
-.work-card-body { flex: 1; min-width: 0; }
-.work-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
-.status-dot { flex: none; width: 9px; height: 9px; margin-top: 7px; }
-.status-dot.owned { background: var(--accent-secondary); }
-.status-dot.wanted { background: var(--text-dim); }
+.work-card:hover { transform: translateY(-2px) rotate(-.2deg); box-shadow: 2px 14px 22px -6px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.4) inset; }
+@keyframes card-in { from { opacity: 0; transform: translateY(6px) rotate(-.4deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
+
+.work-top { display: flex; align-items: flex-start; gap: 13px; }
+.status-dot { flex: none; width: 15px; height: 15px; border-radius: 50%; margin-top: 5px; }
+.status-dot.owned { background: radial-gradient(circle at 32% 28%, var(--wax-catch), var(--wax) 55%, var(--wax-shadow)); box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 2px 4px rgba(0,0,0,.4); }
+.status-dot.wanted { background: var(--verdigris); opacity: .85; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
 .work-main { flex: 1; min-width: 0; }
-.work-title { margin: 0; font: var(--t-body) var(--body); color: var(--text-primary); line-height: 1.4; }
-.work-title mark { background: var(--accent-gilt); color: var(--text-primary); padding: 0 1px; }
-.work-meta { font: italic var(--t-xs) var(--body); color: var(--text-dim); margin-top: 2px; }
-.expand-btn {
-  flex: none; font: var(--t-sm) var(--chrome); color: var(--text-dim);
-  padding: 2px 4px; transition: transform var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-.expand-btn:hover { color: var(--accent-primary); }
-.work-card.open .expand-btn { transform: rotate(180deg); color: var(--accent-primary); }
+.work-title { margin: 0; font: 600 17px var(--chrome); color: var(--ink-fresh); line-height: 1.4; }
+.work-composer { color: var(--wax-shadow); font-weight: 600; }
+.work-meta { font: italic 500 13px var(--body); color: var(--ink-faint); margin-top: 2px; }
+.expand-btn { flex: none; min-width: 36px; min-height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-faint); transition: transform 220ms var(--ease), color 160ms var(--ease); }
+.expand-btn:hover { color: var(--wax); }
+.work-card.open .expand-btn { transform: rotate(180deg); color: var(--wax); }
+.expand-btn svg { width: 11px; height: 11px; }
 
-.recordings { max-height: 0; overflow: hidden; transition: max-height var(--dur-slow) linear; }
-.work-card.open .recordings { max-height: 320px; }
-.recordings-inner { padding: var(--sp-2) 0 var(--sp-1) 21px; display: flex; flex-direction: column; gap: var(--sp-1); }
-.recording-row { display: flex; gap: var(--sp-2); align-items: baseline; font-size: var(--t-sm); }
-.recording-tag {
-  flex: none; font: 600 var(--t-xs) var(--chrome); letter-spacing: .04em; text-transform: uppercase;
-  color: var(--accent-primary);
-}
-.recording-row.alt .recording-tag { color: var(--text-dim); }
-.recording-text { color: var(--text-secondary); font-style: italic; }
+.recordings { max-height: 0; overflow: hidden; transition: max-height 280ms var(--ease); }
+.work-card.open .recordings { max-height: 420px; overflow-y: auto; }
+.recordings-inner { padding-top: 13px; margin-top: 11px; border-top: 1px solid var(--paper-edge); display: flex; flex-direction: column; gap: 9px; }
+.recording-row { display: flex; gap: 10px; align-items: baseline; font: 500 15px var(--body); }
+.recording-tag { flex: none; font: 600 10px var(--chrome); letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 8px; color: var(--paper-lit); background: var(--wax-shadow); }
+.recording-row.alt .recording-tag { background: var(--ink-faint); }
+.recording-text { color: var(--ink-oxidized); font-style: italic; }
 
-.recordings-inner .mini-portrait {
-  width: 22px; height: 22px; flex: none; border: 1px solid var(--border-hi); overflow: hidden; position: relative;
-}
-.recordings-inner .mini-portrait img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-slow) var(--ease); }
-.recordings-inner .mini-portrait img.loaded { opacity: 1; }
-.recordings-inner .mini-portrait .monogram { position: absolute; inset: 0; display: grid; place-items: center; font: 600 10px var(--chrome); color: var(--accent-tertiary); background: var(--accent-tertiary-dim); }
-
-.empty-state { text-align: center; padding: 56px 20px; color: var(--text-secondary); }
-.empty-state .mark { font: 600 var(--t-disp) var(--chrome); color: var(--accent-primary); margin-bottom: var(--sp-3); }
-.empty-state p { font-style: italic; }
-.empty-state button {
-  margin-top: var(--sp-3); display: inline-flex; min-height: 40px; padding: 0 var(--sp-4); align-items: center;
-  border: 1px solid var(--text-primary); color: var(--text-primary);
-  font: 600 var(--t-sm) var(--chrome); letter-spacing: .02em;
-}
-.empty-state button:hover { background: var(--text-primary); color: var(--surface); }
-
-/* ---- bulk action bar ---- */
-.bulk-bar {
-  position: sticky; bottom: 0; display: none; gap: var(--sp-3); align-items: center;
-  background: var(--surface-raised); border: 1px solid var(--border-hi); padding: var(--sp-3) var(--sp-4);
-  margin-top: var(--sp-4);
-}
-.bulk-mode .bulk-bar { display: flex; flex-wrap: wrap; }
-.bulk-bar .count { font: 600 var(--t-sm) var(--chrome); color: var(--text-secondary); }
-.bulk-bar button {
-  border: 1px solid var(--border-hi); padding: 4px 10px; font: 600 var(--t-xs) var(--chrome);
-  letter-spacing: .02em; color: var(--text-secondary);
-}
-.bulk-bar button:hover:not(:disabled) { color: var(--accent-forge); border-color: var(--accent-forge); }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--cabinet-back); }
+.empty-illustration { margin: 0 auto 14px; width: 54px; height: 54px; opacity: .75; }
+.empty-state p { color: var(--paper); font: italic 500 17px var(--body); }
+.empty-state button { margin-top: 16px; display: inline-flex; min-height: 44px; padding: 0 22px; align-items: center; border-radius: var(--radius); background: radial-gradient(circle at 32% 28%, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow)); color: var(--wall-dark); font: 600 14px var(--chrome); box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 3px 8px rgba(0,0,0,.45); }
 
 .hidden { display: none !important; }
+@media (max-width: 520px) { #app { padding: 36px 14px 64px; } }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+.detail-row { display: flex; gap: 14px; margin-bottom: 14px; }
+.detail-art {
+  flex: none; width: 120px; height: 120px; border-radius: var(--radius);
+  background: var(--frame-wood); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 3px 8px rgba(0,0,0,.4);
+  overflow: hidden; position: relative; cursor: pointer;
 }
+.detail-art[data-has-art="1"]:hover::after {
+  content: 'Ask the Archive'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  text-align: center; padding: 6px; font: 600 11px var(--chrome); color: var(--paper-lit); background: rgba(17,25,15,.72);
+}
+.detail-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.detail-art.loading { position: relative; }
+.detail-art.loading::before { content: ''; width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(203,159,78,.25); border-top-color: var(--gilt-catch); animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.detail-art-fallback { font: italic 500 12px var(--body); color: var(--ink-faint); padding: 8px; text-align: center; }
+
+.detail-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.detail-links { display: flex; gap: 8px; flex-wrap: wrap; }
+.service-link { font: 600 12px var(--chrome); letter-spacing: .01em; padding: 5px 11px; border-radius: 12px; border: 1px solid var(--paper-edge); color: var(--ink-oxidized); transition: border-color 160ms var(--ease), color 160ms var(--ease); }
+.service-link:hover { border-color: var(--wax); color: var(--wax); }
+.service-link[aria-disabled="true"] { pointer-events: none; opacity: .5; }
+.service-link .svc-note { font-weight: 500; font-style: italic; opacity: .7; }
+
+.ai-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ask-ai-btn { align-self: flex-start; font: 600 13px var(--chrome); padding: 7px 14px; border-radius: var(--radius); background: radial-gradient(circle at 32% 28%, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow)); color: var(--wall-dark); box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 2px 5px rgba(0,0,0,.4); }
+.regen-btn { font: 600 12px var(--chrome); color: var(--ink-faint); text-decoration: underline; text-underline-offset: 2px; }
+.regen-btn:hover { color: var(--wax); }
+.ai-status { font: italic 500 13px var(--body); color: var(--ink-faint); }
+.ai-status.error { color: var(--wax-shadow); }
+.ai-text { font: 500 14.5px/1.55 var(--body); color: var(--ink-oxidized); font-style: italic; margin: 0; }
+.ai-meta { font: 500 11px var(--chrome); color: var(--ink-faint); letter-spacing: .02em; }
+.retry-link { color: var(--wax); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(10,8,5,.6); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; overflow-y: auto; }
+.modal-sheet { width: 100%; max-width: 460px; max-height: 86vh; overflow-y: auto; background: var(--cabinet-back); border: 1px solid var(--gilt-shadow); border-radius: var(--radius-lg); padding: 22px; box-shadow: 0 20px 50px -12px rgba(0,0,0,.7); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.modal-head h2 { margin: 0; font: 600 20px var(--chrome); color: var(--paper-lit); }
+.modal-note { font: italic 500 13px/1.5 var(--body); color: var(--paper); opacity: .85; margin: 0 0 16px; }
+.modal-section-title { font: 600 12px var(--chrome); color: var(--gilt-catch); letter-spacing: .04em; text-transform: uppercase; margin: 18px 0 8px; }
+.modal-section-title:first-of-type { margin-top: 0; }
+.modal-field { display: block; margin-bottom: 12px; }
+.modal-field span { display: block; font: 600 12px var(--chrome); color: var(--gilt-catch); margin-bottom: 5px; letter-spacing: .02em; }
+.modal-field input, .modal-field select { width: 100%; font: 500 15px var(--body); color: var(--ink-fresh); background: var(--paper); border: 1px solid var(--paper-edge); border-radius: var(--radius); padding: 9px 12px; min-height: 40px; }
+.model-row { display: flex; gap: 8px; }
+.model-row select { flex: 1; min-width: 0; }
+.modal-status { font: italic 500 13px var(--body); color: var(--paper); min-height: 18px; margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.modal-btn { font: 600 13px var(--chrome); padding: 8px 15px; border-radius: var(--radius); background: var(--frame-wood); color: var(--paper); border: 1px solid var(--gilt-shadow); }
+.modal-btn.primary { background: radial-gradient(circle at 32% 28%, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow)); color: var(--wall-dark); border-color: transparent; }
+.preset-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.preset-btn { font: 600 11px var(--chrome); padding: 4px 10px; border-radius: 10px; border: 1px solid var(--gilt-shadow); color: var(--paper); }
+.preset-btn:hover { border-color: var(--gilt-catch); color: var(--gilt-catch); }
+
+@media (max-width: 520px) { .detail-row { flex-direction: column; } .detail-art { width: 100%; height: 160px; } }
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="engraved-frame">
-    <span class="fleuron tl">❦</span><span class="fleuron tr">❦</span>
-    <span class="fleuron bl">❦</span><span class="fleuron br">❦</span>
-    <header class="top">
-      <h1 class="logo"><span class="dinkus">❧</span>Classical Codex</h1>
-      <div class="spacer"></div>
-      <span class="counter-pill" id="counterPill" aria-live="polite"></span>
-      <button class="icon-btn" id="statsBtn" aria-pressed="false" title="Toggle statistics">⌗ Stats</button>
-      <button class="icon-btn" id="bulkBtn" aria-pressed="false" title="Toggle bulk-select mode">☑ Select</button>
-      <button class="icon-btn gilt" id="exportBtn" title="Export owned list as Markdown">⤓ Export</button>
-      <button class="icon-btn" id="reloadBtn" aria-label="Reload manifest" title="Reload">↺ Reload</button>
-    </header>
-  </div>
-
-  <div id="sourceRow"></div>
+  <header class="top">
+    <h1 class="logo">Classical Codex<span class="sub">A Ledger of Works, Kept</span></h1>
+    <div class="spacer"></div>
+    <span class="counter-pill" id="counterPill" aria-live="polite"></span>
+    <button class="icon-btn" id="settingsBtn" aria-label="Open archive settings" title="Settings">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 1.5v2M8 12.5v2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M1.5 8h2M12.5 8h2M3.3 12.7l1.4-1.4M11.3 4.7l1.4-1.4"/>
+        <circle cx="8" cy="8" r="2.6"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="reloadBtn" aria-label="Reload the ledger" title="Reload">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/>
+        <path d="M13.5 2.5v3.5h-3.5"/>
+      </svg>
+    </button>
+  </header>
 
   <div class="toolbar">
-    <div class="search-wrap">
-      <input type="search" id="searchInput" placeholder="Search composer or work…" aria-label="Search">
-    </div>
-    <select class="sort-select" id="sortSelect" aria-label="Sort order">
-      <option value="era">Sort: Era order</option>
-      <option value="composer">Sort: Composer A–Z</option>
-      <option value="title">Sort: Title A–Z</option>
-      <option value="duration-asc">Sort: Duration ↑</option>
-      <option value="duration-desc">Sort: Duration ↓</option>
-    </select>
+    <input type="search" id="searchInput" placeholder="Seek a composer or a work (press / to focus)" aria-label="Search">
   </div>
 
   <div class="chiprow" id="statusChips" role="group" aria-label="Filter by status"></div>
   <div class="chiprow" id="eraChips" role="group" aria-label="Filter by era"></div>
 
   <div id="banner"></div>
-  <div id="statsPanel"></div>
   <div id="skeleton"></div>
   <main id="list" aria-live="polite"></main>
+</div>
 
-  <div class="bulk-bar" id="bulkBar">
-    <span class="count" id="bulkCount">0 selected</span>
-    <button id="bulkOwnBtn">Mark Owned</button>
-    <button id="bulkWantBtn">Mark Wanted</button>
-    <button id="bulkClearBtn">Clear selection</button>
+<svg class="sr-only"><defs>
+  <path id="swash" d="M2 10 C 14 2, 26 2, 38 10 S 62 18, 74 10" />
+</defs></svg>
+
+<div class="modal-backdrop hidden" id="settingsModal">
+  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-head">
+      <h2 id="settingsTitle">Archive Counsel</h2>
+      <button class="icon-btn small" id="settingsClose" aria-label="Close settings">
+        <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9"/></svg>
+      </button>
+    </div>
+    <p class="modal-note">Every key below is kept only in this browser's local storage and sent directly to the provider you choose — never through any server of this page's. Anyone with access to this browser or its scripts can read it; use keys you've scoped/restricted and don't mind rotating.</p>
+
+    <div class="modal-section-title">Ledger source</div>
+    <label class="modal-field">
+      <span>Manifest path (override auto-detect)</span>
+      <input type="text" id="manifestPathInput" placeholder="auto-detected">
+    </label>
+    <div class="modal-actions" style="margin-bottom:14px;">
+      <button class="modal-btn" id="redetectBtn" type="button">Re-detect</button>
+    </div>
+
+    <div class="modal-section-title">AI description provider</div>
+    <div class="preset-row">
+      <button class="preset-btn" data-preset="https://openrouter.ai/api/v1" type="button">OpenRouter</button>
+      <button class="preset-btn" data-preset="https://api.groq.com/openai/v1" type="button">Groq</button>
+      <button class="preset-btn" data-preset="https://api.together.xyz/v1" type="button">Together</button>
+    </div>
+    <label class="modal-field">
+      <span>Base URL</span>
+      <input type="text" id="aiBaseInput" placeholder="https://openrouter.ai/api/v1">
+    </label>
+    <label class="modal-field">
+      <span>API key</span>
+      <input type="password" id="aiKeyInput" placeholder="sk-…" autocomplete="off">
+    </label>
+    <div class="modal-field">
+      <span>Model</span>
+      <div class="model-row">
+        <select id="aiModelSelect"><option value="">— fetch models first —</option></select>
+        <button class="modal-btn" id="fetchModelsBtn" type="button">Fetch models</button>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-bottom:14px;">
+      <button class="modal-btn" id="addProviderBtn" type="button">Save as fallback provider</button>
+    </div>
+    <div id="providerList" style="margin-bottom:10px;"></div>
+
+    <div class="modal-section-title">Streaming deep links (optional)</div>
+    <label class="modal-field">
+      <span>Spotify access token</span>
+      <input type="password" id="spotifyTokenInput" placeholder="paste a token from developer.spotify.com" autocomplete="off">
+    </label>
+    <label class="modal-field">
+      <span>YouTube Data API key</span>
+      <input type="password" id="youtubeKeyInput" placeholder="restrict to YouTube Data API v3" autocomplete="off">
+    </label>
+
+    <div class="modal-status" id="settingsStatus"></div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="settingsSave">Save</button>
+      <button class="modal-btn" id="settingsClear">Clear all keys</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ============================================================
-   CONFIG / CONSTANTS
-   ============================================================ */
+const MANIFEST_CANDIDATES = ['./classical.md', './albums.md', './album-list.md', './music.md', './ledger.md', './repertoire.md'];
 const KEY_CACHE = 'cc_cache_v2';
-const KEY_PORTRAIT = 'cc_portrait_v2_';
-const KEY_OVERRIDES = 'cc_overrides_v2'; // manual owned/wanted overrides keyed by work id
-const KEY_SOURCE = 'cc_source_v2';       // last-selected source file
-const PORTRAIT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const PORTRAIT_CONCURRENCY = 4;
-const MANIFEST_NAMES_HINT = ['classical.md', 'manifest.md', 'collection.md', 'library.md', 'codex.md'];
-const INDEX_FILE = 'manifest.json'; // optional sibling file: {"files":["a.md","b.md"]}
+const KEY_MANIFEST_PATH = 'cc_manifest_path_v2';
+const KEY_AI_KEY = 'cc_ai_key_v2';
+const KEY_AI_BASE = 'cc_ai_base_v2';
+const KEY_AI_MODEL = 'cc_ai_model_v2';
+const KEY_AI_PROVIDERS = 'cc_ai_providers_v2';
+const KEY_ARTWORK_CACHE = 'cc_artwork_cache_v2';
+const KEY_AI_DESC_CACHE = 'cc_ai_desc_cache_v2';
+const KEY_SPOTIFY_TOKEN = 'cc_spotify_token_v1';
+const KEY_YOUTUBE_KEY = 'cc_youtube_key_v1';
 
 const state = {
   works: [],
   statusFilter: 'all',
   eraFilter: 'all',
   query: '',
-  sort: 'era',
   openIds: new Set(),
-  bulkMode: false,
-  bulkSelected: new Set(),
-  statsOpen: false,
-  sources: [],       // [{name, format}]
-  activeSource: null,
-  overrides: {},     // id -> 'owned'|'wanted'
+  artwork: lsGet(KEY_ARTWORK_CACHE, {}),
+  aiDescriptions: lsGet(KEY_AI_DESC_CACHE, {}), // `${work.id}::${model}` -> { text, ts }
+  artworkInFlight: new Set(),
+  aiInFlight: new Set(),
 };
-const portraitFailCache = new Set();
 
 const els = {
   counterPill: document.getElementById('counterPill'),
   reloadBtn: document.getElementById('reloadBtn'),
-  statsBtn: document.getElementById('statsBtn'),
-  bulkBtn: document.getElementById('bulkBtn'),
-  exportBtn: document.getElementById('exportBtn'),
+  settingsBtn: document.getElementById('settingsBtn'),
   searchInput: document.getElementById('searchInput'),
-  sortSelect: document.getElementById('sortSelect'),
   statusChips: document.getElementById('statusChips'),
   eraChips: document.getElementById('eraChips'),
   banner: document.getElementById('banner'),
-  statsPanel: document.getElementById('statsPanel'),
   skeleton: document.getElementById('skeleton'),
   list: document.getElementById('list'),
-  sourceRow: document.getElementById('sourceRow'),
-  bulkBar: document.getElementById('bulkBar'),
-  bulkCount: document.getElementById('bulkCount'),
+  settingsModal: document.getElementById('settingsModal'),
 };
 
-/* ============================================================
-   UTIL
-   ============================================================ */
-function lsGet(key, fallback) {
-  try { const raw = localStorage.getItem(key); return raw === null ? fallback : JSON.parse(raw); }
-  catch { return fallback; }
-}
-function lsSet(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
-}
-function slugify(s) {
-  return String(s).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-}
-function initials(name) {
-  return String(name).split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 3).toUpperCase();
-}
-function highlight(text, q) {
-  if (!q) return escapeHtml(text);
-  const idx = text.toLowerCase().indexOf(q.toLowerCase());
-  if (idx === -1) return escapeHtml(text);
-  return escapeHtml(text.slice(0, idx)) + '<mark>' + escapeHtml(text.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(text.slice(idx + q.length));
-}
-function parseDurationMinutes(label) {
-  if (!label) return null;
-  // handles "~15 min", "~2.5 hrs", "~3 hrs", "~18–24 hrs depending on tempo" (takes first number)
-  const hrMatch = label.match(/([\d.]+)\s*hr/i);
-  if (hrMatch) return parseFloat(hrMatch[1]) * 60;
-  const minMatch = label.match(/([\d.]+)\s*min/i);
-  if (minMatch) return parseFloat(minMatch[1]);
-  return null;
-}
+function lsGet(key, fallback) { try { const raw = localStorage.getItem(key); return raw === null ? fallback : JSON.parse(raw); } catch { return fallback; } }
+function lsSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+function slugify(s) { return String(s).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
-/* ============================================================
-   DUAL-FORMAT MANIFEST PARSER
-   Format A ("codex"): fixed taxonomy — ALL-CAPS or year-bearing
-     header lines, "- [x]/[ ]/bare Composer – Work (meta)" entries,
-     "Best:"/"Alt:" recording lines.
-   Format B ("generic"): standard GFM — "#"/"##" headers, plain
-     "- " or "* " bullets as work titles, optional nested "  - "
-     sub-bullets treated as recording notes. No Best/Alt convention
-     required; checkbox syntax still respected if present.
-   detectFormat() sniffs the first ~40 non-empty lines.
-   ============================================================ */
-function detectFormat(raw) {
-  const lines = raw.split(/\r\n|\r|\n/).map(l => l.trim()).filter(Boolean).slice(0, 60);
-  let codexSignals = 0, genericSignals = 0;
-  for (const line of lines) {
-    if (/^Best:\s*/i.test(line) || /^Alt:\s*/i.test(line)) codexSignals += 2;
-    if (/^-\s*\[[ x]\]\s*.+[–—].+\(.*\)/i.test(line)) codexSignals += 1;
-    if (/^#{1,6}\s+/.test(line)) genericSignals += 2;
-    if (/^[*+]\s+/.test(line)) genericSignals += 1;
-  }
-  return codexSignals >= genericSignals ? 'codex' : 'generic';
-}
-
-function parseManifestCodex(raw, sourceTag) {
-  raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/[\ue000-\uf8ff]/g, '');
+// ---- manifest parsing ----
+function parseManifest(raw) {
+  raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  raw = raw.replace(/[\ue000-\uf8ff]/g, ''); // stray PUA bullet glyphs from source icon fonts
   const lines = raw.split('\n');
   const works = [];
   let currentEra = { name: 'Uncategorized', id: 'uncategorized' };
@@ -491,8 +430,7 @@ function parseManifestCodex(raw, sourceTag) {
     const bestMatch = line.match(/^Best:\s*(.+)$/i);
     const altMatch = line.match(/^Alt:\s*(.+)$/i);
     const bareWorkMatch = !checkedMatch && !uncheckedMatch && !bestMatch && !altMatch
-      ? line.match(/^([^–—-]+(?:–|—)[^(]+\(.+\))$/)
-      : null;
+      ? line.match(/^([^–—-]+(?:–|—)[^(]+\(.+\))$/) : null;
     const looksLikeHeader = !checkedMatch && !uncheckedMatch && !bestMatch && !altMatch && !bareWorkMatch
       && /^[A-Za-z0-9 ,.'’()\u2013\u2014-]+$/.test(line)
       && (line === line.toUpperCase() || /\(\d{4}/.test(line));
@@ -513,634 +451,202 @@ function parseManifestCodex(raw, sourceTag) {
       const durMatch = rest.match(/\(([^()]*?(?:min|hr|hrs)[^()]*)\)\s*$/i);
       let work = rest;
       if (durMatch) { durationLabel = durMatch[1].trim(); work = rest.slice(0, durMatch.index).trim(); }
-      pending = {
-        id: slugify(sourceTag + '-' + currentEra.id + '-' + composer + '-' + work) || 'work-' + works.length,
-        era: currentEra.name, eraId: currentEra.id,
-        composer, work, durationLabel, status, recordings: [], source: sourceTag,
-      };
+      pending = { id: slugify(currentEra.id + '-' + composer + '-' + work) || 'work-' + works.length, era: currentEra.name, eraId: currentEra.id, composer, work, durationLabel, status, recordings: [] };
       continue;
     }
     if (bestMatch && pending) { pending.recordings.push({ tag: 'Best', text: bestMatch[1].trim() }); continue; }
-    if (altMatch && pending) {
-      const parts = altMatch[1].split(';').map(s => s.trim()).filter(Boolean);
-      for (const p of parts) pending.recordings.push({ tag: 'Alt', text: p });
-      continue;
-    }
+    if (altMatch && pending) { const parts = altMatch[1].split(';').map(s => s.trim()).filter(Boolean); for (const p of parts) pending.recordings.push({ tag: 'Alt', text: p }); continue; }
   }
   flush();
   return works;
 }
 
-// Generic GFM parser: "# / ## Heading" => era; "- item" or "* item" => work
-// (composer guessed from an em/en-dash split if present, else whole line is the title
-// under "Unknown composer"); nested "  - sub" one level deeper => recording note,
-// first such line tagged Best, rest tagged Alt. Checkbox syntax still honored.
-function parseManifestGeneric(raw, sourceTag) {
-  raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  const lines = raw.split('\n');
-  const works = [];
-  let currentEra = { name: 'Uncategorized', id: 'uncategorized' };
-  let pending = null;
-  const flush = () => { if (pending) { works.push(pending); pending = null; } };
-
-  for (const rawLine of lines) {
-    if (!rawLine.trim()) continue;
-    const indent = rawLine.match(/^(\s*)/)[1].length;
-    const line = rawLine.trim();
-
-    const headerMatch = line.match(/^#{1,6}\s+(.+)$/);
-    if (headerMatch) {
-      flush();
-      currentEra = { name: headerMatch[1].trim(), id: slugify(headerMatch[1]) || 'era-' + works.length };
-      continue;
-    }
-
-    const bulletMatch = line.match(/^[-*+]\s*(?:\[([ xX])\]\s*)?(.+)$/);
-    if (bulletMatch && indent < 2) {
-      flush();
-      const checked = bulletMatch[1] && /x/i.test(bulletMatch[1]);
-      const hasCheckbox = bulletMatch[1] !== undefined;
-      const body = bulletMatch[2].trim();
-      const status = hasCheckbox ? (checked ? 'owned' : 'wanted') : 'wanted';
-      const dashSplit = body.split(/\s+[–—]\s+/);
-      const composer = dashSplit.length >= 2 ? dashSplit[0].trim() : 'Unknown composer';
-      let rest = dashSplit.length >= 2 ? dashSplit.slice(1).join(' \u2013 ').trim() : body;
-      let durationLabel = null;
-      const durMatch = rest.match(/\(([^()]*?(?:min|hr|hrs)[^()]*)\)\s*$/i);
-      let work = rest;
-      if (durMatch) { durationLabel = durMatch[1].trim(); work = rest.slice(0, durMatch.index).trim(); }
-      else {
-        // also accept trailing parens as generic metadata even without duration units
-        const parenMatch = rest.match(/\(([^()]+)\)\s*$/);
-        if (parenMatch) { durationLabel = parenMatch[1].trim(); work = rest.slice(0, parenMatch.index).trim(); }
-      }
-      pending = {
-        id: slugify(sourceTag + '-' + currentEra.id + '-' + composer + '-' + work) || 'work-' + works.length,
-        era: currentEra.name, eraId: currentEra.id,
-        composer, work, durationLabel, status, recordings: [], source: sourceTag,
-      };
-      continue;
-    }
-
-    // nested bullet / indented line under a pending work = recording note
-    if (pending && indent >= 2) {
-      const subMatch = line.match(/^[-*+]?\s*(?:\[([ xX])\]\s*)?(.+)$/);
-      const text = subMatch ? subMatch[2].trim() : line;
-      const tag = pending.recordings.length === 0 ? 'Best' : 'Alt';
-      if (text) pending.recordings.push({ tag, text });
-      continue;
-    }
-  }
-  flush();
-  return works;
-}
-
-function parseManifest(raw, sourceTag) {
-  const format = detectFormat(raw);
-  const works = format === 'codex' ? parseManifestCodex(raw, sourceTag) : parseManifestGeneric(raw, sourceTag);
-  return { works, format };
-}
-
-/* ============================================================
-   OVERRIDES (manual owned/wanted toggles persisted locally;
-   source files are never mutated — this is a client-side layer)
-   ============================================================ */
-function loadOverrides() { state.overrides = lsGet(KEY_OVERRIDES, {}); }
-function saveOverrides() { lsSet(KEY_OVERRIDES, state.overrides); }
-function applyOverrides(works) {
-  return works.map(w => state.overrides[w.id] ? { ...w, status: state.overrides[w.id] } : w);
-}
-function setOverride(id, status) { state.overrides[id] = status; saveOverrides(); }
-
-/* ============================================================
-   FETCH + MULTI-FILE DISCOVERY
-   Strategy, ranked:
-   1. If hosted on *.github.io or a path matching a GitHub repo,
-      use the GitHub Contents API (unauthenticated, rate-limited
-      but no CORS issues) to list the directory and find *.md.
-   2. Otherwise (or if (1) fails/rate-limits), look for an
-      optional sibling "manifest.json" = {"files": ["a.md", ...]}
-      that the user can maintain by hand on any static host.
-   3. Fall back to probing the historical fixed filename
-      "classical.md" so existing single-file setups keep working
-      with zero migration.
-   ============================================================ */
-function githubRepoInfoFromLocation() {
-  // username.github.io/reponame/... (project pages) or username.github.io/... (user page, repo = username.github.io)
-  const host = location.hostname;
-  const m = host.match(/^([^.]+)\.github\.io$/i);
-  if (!m) return null;
-  const owner = m[1];
-  const parts = location.pathname.split('/').filter(Boolean);
-  const repo = parts.length > 0 ? parts[0] : (owner + '.github.io');
-  const dir = parts.length > 0 ? parts.slice(1, -1).join('/') : '';
-  return { owner, repo, dir };
-}
-
-async function discoverViaGithubApi() {
-  const info = githubRepoInfoFromLocation();
-  if (!info) return null;
-  const apiPath = `https://api.github.com/repos/${info.owner}/${info.repo}/contents/${info.dir}`;
-  const r = await fetch(apiPath, { headers: { Accept: 'application/vnd.github+json' } });
-  if (!r.ok) return null; // rate-limited or repo not public — fall through silently
-  const list = await r.json();
-  if (!Array.isArray(list)) return null;
-  return list.filter(f => f.type === 'file' && /\.md$/i.test(f.name)).map(f => f.name);
-}
-
-async function discoverViaManifestJson() {
-  try {
-    const r = await fetch(INDEX_FILE + '?t=' + Date.now(), { cache: 'no-store' });
-    if (!r.ok) return null;
-    const data = await r.json();
-    if (data && Array.isArray(data.files)) return data.files.filter(f => /\.md$/i.test(f));
-    return null;
-  } catch { return null; }
-}
-
-async function discoverViaProbe() {
-  const found = [];
-  for (const name of MANIFEST_NAMES_HINT) {
-    try {
-      const r = await fetch(name + '?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
-      if (r.ok) found.push(name);
-    } catch {}
-  }
-  return found;
-}
-
-async function discoverManifestFiles() {
-  if (location.protocol === 'file:') throw new Error('file-protocol');
-  let files = await discoverViaGithubApi();
-  if (files && files.length) return { files, method: 'github-api' };
-  files = await discoverViaManifestJson();
-  if (files && files.length) return { files, method: 'manifest-json' };
-  files = await discoverViaProbe();
-  if (files.length) return { files, method: 'probe' };
-  throw new Error('no-manifests-found');
-}
-
+// ---- manifest discovery & fetch ----
 async function fetchText(url) {
+  if (location.protocol === 'file:') throw new Error('file-protocol');
   const busted = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
   const r = await fetch(busted, { cache: 'no-store' });
   if (!r.ok) throw new Error('http-' + r.status);
   return await r.text();
 }
 
-async function loadAllManifests() {
-  const { files, method } = await discoverManifestFiles();
-  const results = [];
-  for (const name of files) {
+async function discoverManifest(forcePath) {
+  const override = forcePath !== undefined ? forcePath : lsGet(KEY_MANIFEST_PATH, '');
+  const candidates = override ? [override] : MANIFEST_CANDIDATES;
+  let lastErr = new Error('no-manifest-found');
+  for (const path of candidates) {
     try {
-      const text = await fetchText(name);
-      const { works, format } = parseManifest(text, slugify(name));
-      results.push({ name, format, works, ok: true });
-    } catch (err) {
-      results.push({ name, ok: false, error: String(err && err.message || err) });
-    }
+      const text = await fetchText(path);
+      const works = parseManifest(text);
+      if (works.length) {
+        if (!override) lsSet(KEY_MANIFEST_PATH, path);
+        return { works, path };
+      }
+      lastErr = new Error('empty-manifest-at-' + path);
+    } catch (err) { lastErr = err; }
   }
-  return { results, method };
+  throw lastErr;
 }
 
-/* ============================================================
-   REFRESH / LOAD
-   ============================================================ */
-async function refresh() {
-  renderSkeleton();
-  els.banner.innerHTML = '';
+async function loadManifest(forcePath) {
   try {
-    const { results, method } = await loadAllManifests();
-    clearSkeleton();
-    const ok = results.filter(r => r.ok);
-    if (!ok.length) throw new Error('no-manifests-parsed');
-
-    state.sources = ok.map(r => ({ name: r.name, format: r.format }));
-    const failed = results.filter(r => !r.ok);
-
-    let active = lsGet(KEY_SOURCE, null);
-    if (!active || !ok.some(r => r.name === active)) active = ok[0].name;
-    state.activeSource = active;
-
-    const cachePayload = {};
-    for (const r of ok) cachePayload[r.name] = { works: r.works, format: r.format, ts: Date.now() };
-    lsSet(KEY_CACHE, cachePayload);
-
-    renderSourceRow();
-    setWorksFromActiveSource();
-
-    if (failed.length) {
-      showBanner(`${failed.length} file(s) found but failed to parse: ${failed.map(f => f.name).join(', ')}.`, false, true);
-    } else if (method === 'probe') {
-      showBanner('Using filename probing (no manifest.json found) — add one to list files explicitly on non-GitHub hosts.', false, false, true);
-    }
+    const { works, path } = await discoverManifest(forcePath);
+    lsSet(KEY_CACHE, { works, ts: Date.now(), path });
+    return { works, stale: false, path };
   } catch (err) {
-    clearSkeleton();
     const cached = lsGet(KEY_CACHE, null);
-    if (cached && Object.keys(cached).length) {
-      state.sources = Object.keys(cached).map(name => ({ name, format: cached[name].format }));
-      let active = lsGet(KEY_SOURCE, null);
-      if (!active || !cached[active]) active = state.sources[0].name;
-      state.activeSource = active;
-      renderSourceRow();
-      setWorksFromCache(cached);
-      showBanner(`Live fetch failed — showing cached data. (${describeError(err)})`, false, true);
-    } else {
-      showBanner(describeError(err), true);
-      els.list.innerHTML = '';
-      els.counterPill.textContent = '';
-      els.sourceRow.innerHTML = '';
-    }
+    if (cached && cached.works && cached.works.length) return { works: cached.works, stale: true, error: err, path: cached.path };
+    throw err;
   }
 }
 
-function setWorksFromActiveSource() {
-  const cache = lsGet(KEY_CACHE, {});
-  setWorksFromCache(cache);
+// ---- iTunes Search API: artwork + real Apple Music deep link. Keyless, public,
+// safe client-side. Rate-limited (~20 req/min/IP) so lookups are lazy (on card
+// expand) and cached indefinitely — classical album metadata doesn't change. ----
+const ITUNES_LOOKUP_TIMEOUT_MS = 8000;
+async function lookupArtwork(work) {
+  if (state.artwork[work.id]) return state.artwork[work.id];
+  if (state.artworkInFlight.has(work.id)) return null;
+  state.artworkInFlight.add(work.id);
+  try {
+    const term = encodeURIComponent(`${work.composer} ${work.work}`);
+    const url = `https://itunes.apple.com/search?term=${term}&entity=album&limit=3`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), ITUNES_LOOKUP_TIMEOUT_MS);
+    let data;
+    try {
+      const r = await fetch(url, { signal: controller.signal });
+      if (!r.ok) throw new Error('itunes-http-' + r.status);
+      data = await r.json();
+    } finally { clearTimeout(timeout); }
+    const best = (data.results || [])[0];
+    const result = best ? {
+      artworkUrl: best.artworkUrl100 ? best.artworkUrl100.replace('100x100bb', '600x600bb') : null,
+      appleMusicUrl: best.collectionViewUrl || null,
+      collectionName: best.collectionName || null,
+      artistName: best.artistName || null,
+    } : 'notfound';
+    state.artwork[work.id] = result;
+    lsSet(KEY_ARTWORK_CACHE, state.artwork);
+    return result;
+  } catch (err) {
+    return null; // network/timeout: don't cache a negative, let a later retry succeed
+  } finally { state.artworkInFlight.delete(work.id); }
 }
-function setWorksFromCache(cache) {
-  const entry = cache[state.activeSource];
-  state.works = entry ? applyOverrides(entry.works) : [];
-  renderStatusChips();
-  renderEraChips();
-  render();
+
+// ---- Spotify / YouTube Music: real deep links only when the person supplies
+// their own token/key (see header note on why no client-secret flow exists
+// here). Otherwise a clearly-labeled search link. ----
+function spotifySearchUrl(work) { return 'https://open.spotify.com/search/' + encodeURIComponent(`${work.composer} ${work.work}`); }
+function youtubeMusicSearchUrl(work) { return 'https://music.youtube.com/search?q=' + encodeURIComponent(`${work.composer} ${work.work}`); }
+
+async function lookupSpotifyAlbum(work) {
+  const token = lsGet(KEY_SPOTIFY_TOKEN, '');
+  if (!token) return null;
+  try {
+    const q = encodeURIComponent(`album:${work.work} artist:${work.composer}`);
+    const r = await fetch(`https://api.spotify.com/v1/search?type=album&limit=1&q=${q}`, { headers: { Authorization: 'Bearer ' + token } });
+    if (!r.ok) return null; // expired/invalid token: fall back silently to search link
+    const data = await r.json();
+    const item = data.albums?.items?.[0];
+    return item ? item.external_urls?.spotify || null : null;
+  } catch { return null; }
+}
+
+async function lookupYoutubeVideo(work) {
+  const key = lsGet(KEY_YOUTUBE_KEY, '');
+  if (!key) return null;
+  try {
+    const q = encodeURIComponent(`${work.composer} ${work.work} full album`);
+    const r = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${q}&key=${key}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    const id = data.items?.[0]?.id?.videoId;
+    return id ? { url: 'https://music.youtube.com/watch?v=' + id, exact: false } : null; // best-match video, not a verified album match
+  } catch { return null; }
+}
+
+// ---- AI description: OpenAI-compatible chat API, multiple provider profiles
+// tried in order so one rate-limited/dead provider doesn't block a result. ----
+const DEFAULT_AI_BASE = 'https://openrouter.ai/api/v1';
+const AI_FETCH_TIMEOUT_MS = 30000;
+
+function getActiveAiProfile() { return { key: lsGet(KEY_AI_KEY, ''), base: lsGet(KEY_AI_BASE, DEFAULT_AI_BASE) || DEFAULT_AI_BASE, model: lsGet(KEY_AI_MODEL, '') }; }
+function getFallbackProviders() { return lsGet(KEY_AI_PROVIDERS, []); }
+function allAiProfiles() {
+  const active = getActiveAiProfile();
+  const list = active.key && active.model ? [active] : [];
+  return list.concat(getFallbackProviders().filter(p => p.key && p.model));
+}
+
+async function fetchAvailableModels(base, key) {
+  if (!key) throw new Error('no-key');
+  const r = await fetch(base.replace(/\/$/, '') + '/models', { headers: { Authorization: 'Bearer ' + key } });
+  if (!r.ok) throw new Error('models-http-' + r.status);
+  const data = await r.json();
+  const list = data.data || data.models || [];
+  return list.map(m => ({ id: m.id || m.name, free: /:free$/.test(m.id || '') || m.pricing?.prompt === '0' }))
+    .filter(m => m.id).sort((a, b) => (b.free - a.free) || a.id.localeCompare(b.id));
+}
+
+async function callAiProfile(profile, work) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AI_FETCH_TIMEOUT_MS);
+  try {
+    const system = 'You write brief factual program notes for a classical music archive. '
+      + 'Two to four sentences covering composition date/context, historical or musical '
+      + 'significance, and one specific concrete fact (premiere, dedication, structure, '
+      + 'reception). State only facts you are confident of; omit rather than guess. '
+      + 'No marketing language, no superlatives like "masterpiece" or "timeless", no filler.';
+    const user = `Composer: ${work.composer}\nWork: ${work.work}`;
+    const r = await fetch(profile.base.replace(/\/$/, '') + '/chat/completions', {
+      method: 'POST', signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + profile.key },
+      body: JSON.stringify({ model: profile.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0.3, max_tokens: 260 }),
+    });
+    if (!r.ok) { const body = await r.text().catch(() => ''); throw new Error('ai-http-' + r.status + (body ? ': ' + body.slice(0, 200) : '')); }
+    const data = await r.json();
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error('ai-empty-response');
+    return text;
+  } finally { clearTimeout(timeout); }
+}
+
+async function generateAiDescription(work) {
+  const profiles = allAiProfiles();
+  if (!profiles.length) throw new Error('no-key');
+  let lastErr;
+  for (const profile of profiles) {
+    try { return { text: await callAiProfile(profile, work), model: profile.model }; }
+    catch (err) { lastErr = err; }
+  }
+  throw lastErr || new Error('ai-all-providers-failed');
 }
 
 function describeError(err) {
   const msg = String(err && err.message || err);
-  if (msg === 'file-protocol') return 'Opened from disk (file://) — serve this folder over HTTP (e.g. python3 -m http.server) and open the localhost URL instead.';
-  if (msg === 'no-manifests-found') return 'No .md manifest found. On GitHub Pages this uses the repo API automatically; on other hosts, add a "manifest.json" beside this file: {"files":["classical.md"]}.';
-  if (msg === 'no-manifests-parsed') return 'Manifest file(s) were found but none could be parsed.';
-  if (msg.startsWith('http-')) return `Request failed (status ${msg.replace('http-', '')}).`;
-  return 'Could not load manifests: ' + msg;
+  if (msg === 'file-protocol') return 'This page was opened from disk and cannot reach the ledger. Serve the folder over HTTP (e.g. python3 -m http.server) and open the localhost address instead.';
+  if (msg.startsWith('http-')) return `No ledger markdown file was found among the usual names (${MANIFEST_CANDIDATES.join(', ')}). Set the path in Settings or add one of these files.`;
+  if (msg === 'no-manifest-found') return `No ledger markdown file was found among the usual names (${MANIFEST_CANDIDATES.join(', ')}). Set the path in Settings or add one of these files.`;
+  return 'The ledger could not be read: ' + msg;
+}
+function describeAiError(err) {
+  const msg = String(err && err.message || err);
+  if (msg === 'no-key') return 'No API key is set. Open settings to add one.';
+  if (msg.startsWith('ai-http-401') || msg.startsWith('ai-http-403')) return 'The key was refused by the provider. Check it in settings.';
+  if (msg.startsWith('ai-http-429')) return 'The provider is rate-limiting this key. Wait a moment and try again.';
+  if (msg.startsWith('ai-http-')) return 'The provider returned an error: ' + msg.replace('ai-http-', 'status ');
+  if (msg === 'ai-empty-response') return 'The model returned no text.';
+  if (err && err.name === 'AbortError') return 'The request timed out.';
+  return 'The counsel could not be reached: ' + msg;
 }
 
-function showBanner(msg, isError, isNotice) {
+function showBanner(msg, isError) {
   if (!msg) { els.banner.innerHTML = ''; return; }
-  const cls = isError ? 'error' : (isNotice ? 'notice' : '');
-  els.banner.innerHTML = `<div class="state-banner ${cls}">${escapeHtml(msg)}<button id="bannerRetry">Retry</button></div>`;
+  els.banner.innerHTML = `<div class="state-banner${isError ? ' error' : ''}">${escapeHtml(msg)}<button id="bannerRetry">Try again</button></div>`;
   document.getElementById('bannerRetry').onclick = refresh;
 }
 
-/* ============================================================
-   SOURCE ROW (multi-file switcher)
-   ============================================================ */
-function renderSourceRow() {
-  if (state.sources.length <= 1) { els.sourceRow.innerHTML = ''; return; }
-  const chips = state.sources.map(s =>
-    `<button class="source-chip ${s.name === state.activeSource ? 'active' : ''}" data-name="${escapeHtml(s.name)}">${escapeHtml(s.name)}<span class="fmt">${s.format}</span></button>`
-  ).join('');
-  els.sourceRow.innerHTML = `<div class="source-row"><span class="label">Sources</span>${chips}</div>`;
-  els.sourceRow.querySelectorAll('.source-chip').forEach(btn => {
-    btn.onclick = () => {
-      state.activeSource = btn.dataset.name;
-      lsSet(KEY_SOURCE, state.activeSource);
-      state.eraFilter = 'all'; state.statusFilter = 'all'; state.bulkSelected.clear();
-      renderSourceRow();
-      setWorksFromActiveSource();
-    };
-  });
-}
-
-/* ============================================================
-   PORTRAITS (concurrency-capped)
-   ============================================================ */
-let portraitInFlight = 0;
-const portraitQueue = [];
-function enqueuePortrait(fn) {
-  portraitQueue.push(fn);
-  pumpPortraitQueue();
-}
-function pumpPortraitQueue() {
-  while (portraitInFlight < PORTRAIT_CONCURRENCY && portraitQueue.length) {
-    const fn = portraitQueue.shift();
-    portraitInFlight++;
-    fn().finally(() => { portraitInFlight--; pumpPortraitQueue(); });
-  }
-}
-
-function portraitBoxHtml(composer, size) {
-  const slug = slugify(composer);
-  const cls = size === 'mini' ? 'mini-portrait' : 'portrait';
-  return `<span class="${cls}" data-composer="${escapeHtml(composer)}" data-slug="${slug}">
-    <span class="monogram">${escapeHtml(initials(composer))}</span>
-  </span>`;
-}
-
-function resolvePortrait(composer) {
-  return new Promise(resolve => {
-    const slug = slugify(composer);
-    const cacheKey = KEY_PORTRAIT + slug;
-    const cached = lsGet(cacheKey, null);
-    if (cached) {
-      if (cached.url === null) return resolve(null);
-      if (Date.now() - cached.ts < PORTRAIT_TTL_MS) return resolve(cached.url);
-    }
-    if (portraitFailCache.has(slug)) return resolve(null);
-
-    enqueuePortrait(async () => {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-        const searchEndpoint = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search' +
-          '&gsrsearch=' + encodeURIComponent('intitle:' + composer + ' portrait') +
-          '&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=160&format=json&origin=*';
-        const r = await fetch(searchEndpoint, { signal: controller.signal });
-        clearTimeout(timeout);
-        if (!r.ok) throw new Error('http-' + r.status);
-        const data = await r.json();
-        const pages = data && data.query && data.query.pages;
-        let url = null;
-        if (pages) {
-          const first = Object.values(pages)[0];
-          if (first && first.imageinfo && first.imageinfo[0]) url = first.imageinfo[0].thumburl || first.imageinfo[0].url || null;
-        }
-        lsSet(cacheKey, { url, ts: Date.now() });
-        if (!url) portraitFailCache.add(slug);
-        resolve(url);
-      } catch {
-        portraitFailCache.add(slug);
-        lsSet(cacheKey, { url: null, ts: Date.now() });
-        resolve(null);
-      }
-    });
-  });
-}
-
-function hydratePortraits(root) {
-  root.querySelectorAll('[data-composer]').forEach(box => {
-    const composer = box.dataset.composer;
-    resolvePortrait(composer).then(url => {
-      if (!url) return;
-      const img = document.createElement('img');
-      img.alt = '';
-      img.loading = 'lazy';
-      img.onload = () => img.classList.add('loaded');
-      img.onerror = () => img.remove();
-      img.src = url;
-      box.appendChild(img);
-    });
-  });
-}
-
-/* ============================================================
-   DERIVED VIEWS / FILTER / SORT
-   ============================================================ */
-function eraOrder() {
-  const seen = [];
-  const set = new Set();
-  for (const w of state.works) if (!set.has(w.eraId)) { set.add(w.eraId); seen.push({ id: w.eraId, name: w.era }); }
-  return seen;
-}
-
-function filteredWorks() {
-  const q = state.query.trim().toLowerCase();
-  let list = state.works.filter(w => {
-    if (state.statusFilter !== 'all' && w.status !== state.statusFilter) return false;
-    if (state.eraFilter !== 'all' && w.eraId !== state.eraFilter) return false;
-    if (q && !(w.composer.toLowerCase().includes(q) || w.work.toLowerCase().includes(q))) return false;
-    return true;
-  });
-  const durVal = w => { const m = parseDurationMinutes(w.durationLabel); return m === null ? Infinity : m; };
-  switch (state.sort) {
-    case 'composer': list = list.slice().sort((a, b) => a.composer.localeCompare(b.composer) || a.work.localeCompare(b.work)); break;
-    case 'title': list = list.slice().sort((a, b) => a.work.localeCompare(b.work)); break;
-    case 'duration-asc': list = list.slice().sort((a, b) => durVal(a) - durVal(b)); break;
-    case 'duration-desc': list = list.slice().sort((a, b) => durVal(b) - durVal(a)); break;
-    default: break; // 'era' keeps manifest order
-  }
-  return list;
-}
-
-function updateCounter() {
-  const owned = state.works.filter(w => w.status === 'owned').length;
-  els.counterPill.innerHTML = `<b>${owned}</b> / ${state.works.length} owned`;
-}
-
-function renderStatusChips() {
-  const owned = state.works.filter(w => w.status === 'owned').length;
-  const wanted = state.works.length - owned;
-  els.statusChips.innerHTML = [
-    chip('All', state.works.length, 'all'),
-    chip('Owned', owned, 'owned', 'status-owned'),
-    chip('Wanted', wanted, 'wanted'),
-  ].join('');
-  els.statusChips.querySelectorAll('.chip').forEach(btn => {
-    btn.onclick = () => { state.statusFilter = btn.dataset.val; render(); };
-  });
-}
-function chip(label, count, val, extraClass) {
-  const active = state.statusFilter === val;
-  return `<button class="chip ${extraClass || ''} ${active ? 'active' : ''}" data-val="${val}">${escapeHtml(label)} <span class="count">${count}</span></button>`;
-}
-
-function renderEraChips() {
-  const eras = eraOrder();
-  const allBtn = `<button class="chip ${state.eraFilter === 'all' ? 'active' : ''}" data-era="all">All eras</button>`;
-  const rest = eras.map(e => {
-    const count = state.works.filter(w => w.eraId === e.id).length;
-    return `<button class="chip ${state.eraFilter === e.id ? 'active' : ''}" data-era="${e.id}">${escapeHtml(e.name)} <span class="count">${count}</span></button>`;
-  }).join('');
-  els.eraChips.innerHTML = allBtn + rest;
-  els.eraChips.querySelectorAll('.chip').forEach(btn => {
-    btn.onclick = () => { state.eraFilter = btn.dataset.era; render(); };
-  });
-}
-
-/* ============================================================
-   STATS PANEL
-   ============================================================ */
-function renderStats() {
-  if (!state.statsOpen) { els.statsPanel.innerHTML = ''; return; }
-  const total = state.works.length;
-  const owned = state.works.filter(w => w.status === 'owned').length;
-  const composers = new Set(state.works.map(w => w.composer)).size;
-  const eras = eraOrder().length;
-  const totalMin = state.works.reduce((sum, w) => { const m = parseDurationMinutes(w.durationLabel); return sum + (m || 0); }, 0);
-  const hrs = Math.round(totalMin / 60);
-  els.statsPanel.innerHTML = `<div class="stats-panel">
-    <div class="stat"><span class="num">${total}</span><span class="lbl">Works</span></div>
-    <div class="stat"><span class="num">${owned}</span><span class="lbl">Owned</span></div>
-    <div class="stat"><span class="num">${total ? Math.round(owned / total * 100) : 0}%</span><span class="lbl">Complete</span></div>
-    <div class="stat"><span class="num">${composers}</span><span class="lbl">Composers</span></div>
-    <div class="stat"><span class="num">${eras}</span><span class="lbl">Eras</span></div>
-    <div class="stat"><span class="num">~${hrs}h</span><span class="lbl">Total runtime</span></div>
-  </div>`;
-}
-els.statsBtn.onclick = () => {
-  state.statsOpen = !state.statsOpen;
-  els.statsBtn.setAttribute('aria-pressed', String(state.statsOpen));
-  renderStats();
-};
-
-/* ============================================================
-   BULK SELECT
-   ============================================================ */
-els.bulkBtn.onclick = () => {
-  state.bulkMode = !state.bulkMode;
-  document.getElementById('app').classList.toggle('bulk-mode', state.bulkMode);
-  els.bulkBtn.setAttribute('aria-pressed', String(state.bulkMode));
-  if (!state.bulkMode) state.bulkSelected.clear();
-  updateBulkBar();
-  render();
-};
-function updateBulkBar() {
-  els.bulkCount.textContent = `${state.bulkSelected.size} selected`;
-  const none = state.bulkSelected.size === 0;
-  document.getElementById('bulkOwnBtn').disabled = none;
-  document.getElementById('bulkWantBtn').disabled = none;
-  document.getElementById('bulkClearBtn').disabled = none;
-}
-document.getElementById('bulkOwnBtn').onclick = () => { applyBulkStatus('owned'); };
-document.getElementById('bulkWantBtn').onclick = () => { applyBulkStatus('wanted'); };
-document.getElementById('bulkClearBtn').onclick = () => { state.bulkSelected.clear(); updateBulkBar(); render(); };
-function applyBulkStatus(status) {
-  for (const id of state.bulkSelected) {
-    setOverride(id, status);
-    const w = state.works.find(w => w.id === id);
-    if (w) w.status = status;
-  }
-  state.bulkSelected.clear();
-  updateBulkBar();
-  renderStatusChips();
-  render();
-}
-
-/* ============================================================
-   EXPORT (owned list as Markdown, matching codex grammar)
-   ============================================================ */
-els.exportBtn.onclick = () => {
-  const owned = state.works.filter(w => w.status === 'owned');
-  if (!owned.length) { showBanner('No owned works to export yet.', false, true); return; }
-  const byEra = {};
-  for (const w of owned) { (byEra[w.era] ||= []).push(w); }
-  let md = '';
-  for (const eraName of Object.keys(byEra)) {
-    md += `${eraName.toUpperCase()}\n\n`;
-    for (const w of byEra[eraName]) {
-      const dur = w.durationLabel ? ` (${w.durationLabel})` : '';
-      md += `- [x] ${w.composer} – ${w.work}${dur}\n`;
-      const best = w.recordings.find(r => r.tag === 'Best');
-      const alts = w.recordings.filter(r => r.tag === 'Alt');
-      if (best) md += ` Best: ${best.text}\n`;
-      if (alts.length) md += ` Alt: ${alts.map(a => a.text).join('; ')}\n`;
-      md += '\n';
-    }
-  }
-  const blob = new Blob([md], { type: 'text/markdown' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `codex-owned-${slugify(state.activeSource || 'export')}.md`;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(a.href);
-};
-
-/* ============================================================
-   RENDER
-   ============================================================ */
-function render() {
-  updateCounter();
-  renderStats();
-  const works = filteredWorks();
-  if (!state.works.length) { els.list.innerHTML = ''; return; }
-  if (!works.length) {
-    els.list.innerHTML = `<div class="empty-state"><div class="mark">♩</div>
-      <p>No works match this filter.</p>
-      <button id="clearFiltersBtn">Clear filters</button></div>`;
-    document.getElementById('clearFiltersBtn').onclick = () => {
-      state.statusFilter = 'all'; state.eraFilter = 'all'; state.query = '';
-      els.searchInput.value = '';
-      renderStatusChips(); renderEraChips(); render();
-    };
-    return;
-  }
-
-  // When sorting by anything other than 'era', group under a single pseudo-era
-  // so the composer-strip + drop-cap structure still reads cleanly.
-  const groupedByEra = state.sort === 'era';
-  const eras = groupedByEra ? eraOrder().filter(e => works.some(w => w.eraId === e.id)) : [{ id: '__all__', name: 'All Works' }];
-
-  let html = '';
-  let firstEra = true;
-  for (const era of eras) {
-    const eraWorks = groupedByEra ? works.filter(w => w.eraId === era.id) : works;
-    const owned = eraWorks.filter(w => w.status === 'owned').length;
-    html += `<section class="era-section">`;
-    if (groupedByEra) {
-      html += `<div class="era-head">
-        <h2>${escapeHtml(era.name)}</h2>
-        <span class="era-progress">${owned}/${eraWorks.length} OWNED</span>
-      </div>`;
-    }
-    html += `<div class="work-list">`;
-    let lastComposer = null;
-    let firstComposerInEra = true;
-    eraWorks.forEach((w, i) => {
-      if (w.composer !== lastComposer) {
-        const dropCls = (firstEra && firstComposerInEra) ? 'drop' : '';
-        html += `<div class="composer-strip ${dropCls}">${portraitBoxHtml(w.composer, 'full')}<span class="composer-name">${escapeHtml(w.composer)}</span></div>`;
-        lastComposer = w.composer;
-        firstComposerInEra = false;
-      }
-      html += workCard(w, i);
-    });
-    html += `</div></section>`;
-    firstEra = false;
-  }
-  els.list.innerHTML = html;
-
-  els.list.querySelectorAll('.work-card').forEach(card => {
-    card.querySelector('.expand-btn').onclick = () => {
-      const id = card.dataset.id;
-      if (state.openIds.has(id)) state.openIds.delete(id); else state.openIds.add(id);
-      card.classList.toggle('open');
-    };
-    const check = card.querySelector('.bulk-check');
-    if (check) {
-      const toggle = () => {
-        const id = card.dataset.id;
-        if (state.bulkSelected.has(id)) state.bulkSelected.delete(id); else state.bulkSelected.add(id);
-        check.classList.toggle('checked');
-        check.setAttribute('aria-checked', state.bulkSelected.has(id) ? 'true' : 'false');
-        updateBulkBar();
-      };
-      check.onclick = toggle;
-      check.onkeydown = (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-      };
-    }
-  });
-  hydratePortraits(els.list);
-}
-
-function workCard(w, i) {
-  const open = state.openIds.has(w.id);
-  const q = state.query.trim();
-  const checked = state.bulkSelected.has(w.id);
-  const recordings = w.recordings.map(r =>
-    `<div class="recording-row ${r.tag === 'Alt' ? 'alt' : ''}">
-       <span class="recording-tag">${escapeHtml(r.tag)}</span>
-       ${portraitBoxHtml(w.composer, 'mini')}
-       <span class="recording-text">${escapeHtml(r.text)}</span>
-     </div>`).join('');
-  return `<article class="work-card ${open ? 'open' : ''}" data-id="${w.id}" style="animation-delay:${Math.min(i * 20, 160)}ms">
-    <span class="bulk-check ${checked ? 'checked' : ''}" role="checkbox" aria-checked="${checked}" tabindex="${state.bulkMode ? '0' : '-1'}"></span>
-    <div class="work-card-body">
-      <div class="work-top">
-        <span class="status-dot ${w.status}" aria-hidden="true"></span>
-        <div class="work-main">
-          <h3 class="work-title">${highlight(w.work, q)}</h3>
-          <div class="work-meta">${w.durationLabel ? escapeHtml(w.durationLabel) : ''}</div>
-        </div>
-        <button class="expand-btn" aria-label="Show recordings" aria-expanded="${open}">▼</button>
-      </div>
-      <div class="recordings"><div class="recordings-inner">${recordings || '<span class="recording-text">No recordings listed.</span>'}</div></div>
-    </div>
-  </article>`;
-}
-
-/* ============================================================
-   SKELETON
-   ============================================================ */
 function renderSkeleton() {
   let html = '';
   for (let s = 0; s < 2; s++) {
@@ -1152,14 +658,329 @@ function renderSkeleton() {
 }
 function clearSkeleton() { els.skeleton.innerHTML = ''; }
 
-/* ============================================================
-   WIRE-UP + BOOT
-   ============================================================ */
-els.reloadBtn.onclick = refresh;
-els.searchInput.addEventListener('input', () => { state.query = els.searchInput.value; render(); });
-els.sortSelect.addEventListener('change', () => { state.sort = els.sortSelect.value; render(); });
+function eraOrder() {
+  const seen = []; const set = new Set();
+  for (const w of state.works) if (!set.has(w.eraId)) { set.add(w.eraId); seen.push({ id: w.eraId, name: w.era }); }
+  return seen;
+}
+function updateCounter() { const owned = state.works.filter(w => w.status === 'owned').length; els.counterPill.innerHTML = `<b>${owned}</b> of ${state.works.length} sealed`; }
 
-loadOverrides();
+function renderStatusChips() {
+  const owned = state.works.filter(w => w.status === 'owned').length;
+  const wanted = state.works.length - owned;
+  els.statusChips.innerHTML = [
+    chip('All Entries', state.works.length, 'all'),
+    chip('Sealed', owned, 'owned', 'status-owned'),
+    chip('Sought', wanted, 'wanted', 'status-wanted'),
+  ].join('');
+  els.statusChips.querySelectorAll('.chip').forEach(btn => { btn.onclick = () => { state.statusFilter = btn.dataset.val; render(); }; });
+}
+function chip(label, count, val, extraClass) {
+  const active = state.statusFilter === val;
+  return `<button class="chip ${extraClass || ''} ${active ? 'active' : ''}" data-val="${val}">${escapeHtml(label)} <span class="count">${count}</span></button>`;
+}
+function renderEraChips() {
+  const eras = eraOrder();
+  const allBtn = `<button class="chip ${state.eraFilter === 'all' ? 'active' : ''}" data-era="all">All Eras</button>`;
+  const rest = eras.map(e => {
+    const count = state.works.filter(w => w.eraId === e.id).length;
+    return `<button class="chip ${state.eraFilter === e.id ? 'active' : ''}" data-era="${e.id}">${escapeHtml(e.name)} <span class="count">${count}</span></button>`;
+  }).join('');
+  els.eraChips.innerHTML = allBtn + rest;
+  els.eraChips.querySelectorAll('.chip').forEach(btn => { btn.onclick = () => { state.eraFilter = btn.dataset.era; render(); }; });
+}
+
+function filteredWorks() {
+  const q = state.query.trim().toLowerCase();
+  return state.works.filter(w => {
+    if (state.statusFilter !== 'all' && w.status !== state.statusFilter) return false;
+    if (state.eraFilter !== 'all' && w.eraId !== state.eraFilter) return false;
+    if (q && !(w.composer.toLowerCase().includes(q) || w.work.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function render() {
+  updateCounter();
+  const works = filteredWorks();
+  if (!state.works.length) {
+    els.list.innerHTML = `<div class="empty-state"><svg class="empty-illustration" viewBox="0 0 74 20" fill="none" stroke="var(--gilt)" stroke-width="1.4" stroke-linecap="round"><use href="#swash"/></svg><p>The ledger holds no entries yet.</p></div>`;
+    return;
+  }
+  if (!works.length) {
+    const filtered = state.statusFilter !== 'all' || state.eraFilter !== 'all' || state.query.trim();
+    els.list.innerHTML = `<div class="empty-state"><svg class="empty-illustration" viewBox="0 0 74 20" fill="none" stroke="var(--gilt)" stroke-width="1.4" stroke-linecap="round"><use href="#swash"/></svg><p>No entry in the ledger answers to this search.</p>${filtered ? '<button id="clearFiltersBtn">Clear the filters</button>' : ''}</div>`;
+    const clearBtn = document.getElementById('clearFiltersBtn');
+    if (clearBtn) clearBtn.onclick = () => { state.statusFilter = 'all'; state.eraFilter = 'all'; state.query = ''; els.searchInput.value = ''; renderStatusChips(); renderEraChips(); render(); };
+    return;
+  }
+  const eras = eraOrder().filter(e => works.some(w => w.eraId === e.id));
+  let html = '';
+  for (const era of eras) {
+    const eraWorks = works.filter(w => w.eraId === era.id);
+    const owned = eraWorks.filter(w => w.status === 'owned').length;
+    html += `<section class="era-section"><div class="era-head"><h2>${escapeHtml(era.name)}</h2><span class="era-progress">${owned} of ${eraWorks.length} sealed</span></div><div class="work-list">`;
+    eraWorks.forEach((w, i) => { html += workCard(w, i); });
+    html += `</div></section>`;
+  }
+  els.list.innerHTML = html;
+  els.list.querySelectorAll('.work-card').forEach(card => {
+    const id = card.dataset.id;
+    const work = state.works.find(w => w.id === id);
+    card.querySelector('.expand-btn').onclick = () => {
+      if (state.openIds.has(id)) state.openIds.delete(id); else state.openIds.add(id);
+      card.classList.toggle('open');
+      if (state.openIds.has(id) && work) loadWorkDetail(card, work);
+    };
+    if (state.openIds.has(id) && work) loadWorkDetail(card, work);
+    wireDetailButtons(card, work);
+  });
+}
+
+async function loadWorkDetail(card, work) {
+  const artSlot = card.querySelector('.detail-art');
+  if (!artSlot) return;
+  const cached = state.artwork[work.id];
+  if (cached) { paintArtwork(artSlot, cached, work); return; }
+  artSlot.classList.add('loading');
+  const result = await lookupArtwork(work);
+  artSlot.classList.remove('loading');
+  if (result) paintArtwork(artSlot, result, work);
+  else artSlot.innerHTML = '<span class="detail-art-fallback">Artwork could not be reached. <button class="retry-link" data-retry-art>Try again</button></span>';
+  wireDetailButtons(card, work);
+}
+
+function paintArtwork(slot, result, work) {
+  const card = slot.closest('.work-card');
+  if (result === 'notfound' || !result.artworkUrl) {
+    slot.innerHTML = '<span class="detail-art-fallback">No cover found in the archive for this recording.</span>';
+    slot.removeAttribute('data-has-art');
+  } else {
+    slot.innerHTML = `<img src="${escapeHtml(result.artworkUrl)}" alt="Cover art for ${escapeHtml(work.work)}. Click to ask the Archive about it." loading="lazy" width="120" height="120">`;
+    slot.setAttribute('data-has-art', '1');
+  }
+  const linksSlot = card && card.querySelector('.detail-links');
+  if (linksSlot) { linksSlot.innerHTML = '<span class="ai-status">Resolving streaming links\u2026</span>'; renderLinks(linksSlot, work, result); }
+}
+
+async function renderLinks(slot, work, artwork) {
+  const appleUrl = artwork && artwork !== 'notfound' && artwork.appleMusicUrl;
+  const [spotifyUrl, ytResult] = await Promise.all([lookupSpotifyAlbum(work), lookupYoutubeVideo(work)]);
+  slot.innerHTML = `
+    <a class="service-link apple" ${appleUrl ? `href="${escapeHtml(appleUrl)}"` : 'aria-disabled="true"'} target="_blank" rel="noopener">Apple Music ${appleUrl ? '' : '<span class="svc-note">(no match)</span>'}</a>
+    <a class="service-link spotify" href="${escapeHtml(spotifyUrl || spotifySearchUrl(work))}" target="_blank" rel="noopener">Spotify ${spotifyUrl ? '' : '<span class="svc-note">(search)</span>'}</a>
+    <a class="service-link youtube" href="${escapeHtml(ytResult ? ytResult.url : youtubeMusicSearchUrl(work))}" target="_blank" rel="noopener">YouTube Music ${ytResult ? '<span class="svc-note">(closest match)</span>' : '<span class="svc-note">(search)</span>'}</a>`;
+}
+
+function wireDetailButtons(card, work) {
+  if (!card || !work) return;
+  const retryArt = card.querySelector('[data-retry-art]');
+  if (retryArt) retryArt.onclick = () => loadWorkDetail(card, work);
+  const askBtn = card.querySelector('.ask-ai-btn');
+  if (askBtn) askBtn.onclick = () => runAiDescription(card, work, false);
+  const regenBtn = card.querySelector('.regen-btn');
+  if (regenBtn) regenBtn.onclick = () => runAiDescription(card, work, true);
+  const art = card.querySelector('.detail-art[data-has-art="1"]');
+  if (art) art.onclick = () => { if (!state.aiDescriptions[aiCacheKey(work)]) runAiDescription(card, work, false); };
+}
+
+function aiCacheKey(work) { const { model } = getActiveAiProfile(); return `${work.id}::${model || 'default'}`; }
+
+async function runAiDescription(card, work, forceRegen) {
+  const slot = card.querySelector('.ai-desc');
+  if (!slot) return;
+  const cacheKey = aiCacheKey(work);
+  if (!forceRegen && state.aiDescriptions[cacheKey]) { renderAiSlot(slot, state.aiDescriptions[cacheKey]); return; }
+  if (!allAiProfiles().length) { openSettings('An archivist\u2019s key is required before the counsel can be consulted.'); return; }
+  if (state.aiInFlight.has(work.id)) return;
+  state.aiInFlight.add(work.id);
+  slot.innerHTML = '<span class="ai-status">Consulting the archive\u2026</span>';
+  try {
+    const { text, model } = await generateAiDescription(work);
+    const entry = { text, model, ts: Date.now() };
+    state.aiDescriptions[cacheKey] = entry;
+    lsSet(KEY_AI_DESC_CACHE, state.aiDescriptions);
+    renderAiSlot(slot, entry);
+  } catch (err) {
+    slot.innerHTML = `<span class="ai-status error">${escapeHtml(describeAiError(err))} <button class="retry-link" data-retry-ai>Try again</button></span>`;
+    const retryAi = slot.querySelector('[data-retry-ai]');
+    if (retryAi) retryAi.onclick = () => runAiDescription(card, work, forceRegen);
+  } finally { state.aiInFlight.delete(work.id); }
+}
+
+function renderAiSlot(slot, entry) {
+  slot.innerHTML = `<p class="ai-text">${escapeHtml(entry.text)}</p><div class="ai-row"><span class="ai-meta">${escapeHtml(entry.model || '')}</span><button class="regen-btn">Ask again</button></div>`;
+  const card = slot.closest('.work-card');
+  const work = card && state.works.find(w => w.id === card.dataset.id);
+  const regenBtn = slot.querySelector('.regen-btn');
+  if (regenBtn && work) regenBtn.onclick = () => runAiDescription(card, work, true);
+}
+
+function workCard(w, i) {
+  const open = state.openIds.has(w.id);
+  const recordings = w.recordings.map(r => `<div class="recording-row ${r.tag === 'Alt' ? 'alt' : ''}"><span class="recording-tag">${r.tag}</span><span class="recording-text">${escapeHtml(r.text)}</span></div>`).join('');
+  const cachedArt = state.artwork[w.id];
+  const cachedAi = state.aiDescriptions[aiCacheKey(w)];
+  const hasArt = cachedArt && cachedArt !== 'notfound' && cachedArt.artworkUrl;
+  return `<article class="work-card ${open ? 'open' : ''}" data-id="${w.id}" style="animation-delay:${Math.min(i * 40, 240)}ms">
+    <div class="work-top">
+      <span class="status-dot ${w.status}" aria-hidden="true"></span>
+      <div class="work-main">
+        <h3 class="work-title"><span class="work-composer">${escapeHtml(w.composer)}</span> \u2013 ${escapeHtml(w.work)}</h3>
+        <div class="work-meta">${w.durationLabel ? escapeHtml(w.durationLabel) : ''}</div>
+      </div>
+      <button class="expand-btn" aria-label="Show recordings consulted" aria-expanded="${open}">
+        <svg viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1.5 6 6.5 11 1.5"/></svg>
+      </button>
+    </div>
+    <div class="recordings"><div class="recordings-inner">
+      <div class="detail-row">
+        <div class="detail-art${cachedArt ? '' : ' loading'}" ${hasArt ? 'data-has-art="1"' : ''}>${cachedArt ? (cachedArt === 'notfound' ? '<span class="detail-art-fallback">No cover found in the archive for this recording.</span>' : `<img src="${escapeHtml(cachedArt.artworkUrl || '')}" alt="Cover art for ${escapeHtml(w.work)}. Click to ask the Archive about it." loading="lazy" width="120" height="120">`) : ''}</div>
+        <div class="detail-main">
+          <div class="detail-links"></div>
+          <div class="ai-desc">${cachedAi ? `<p class="ai-text">${escapeHtml(cachedAi.text)}</p><div class="ai-row"><span class="ai-meta">${escapeHtml(cachedAi.model || '')}</span><button class="regen-btn">Ask again</button></div>` : '<button class="ask-ai-btn">Ask the Archive</button>'}</div>
+        </div>
+      </div>
+      ${recordings || '<span class="recording-text">No recording yet set down.</span>'}
+    </div></div>
+  </article>`;
+}
+
+async function refresh(forcePath) {
+  renderSkeleton();
+  try {
+    const { works, stale, path } = await loadManifest(forcePath);
+    clearSkeleton();
+    state.works = works;
+    renderStatusChips();
+    renderEraChips();
+    showBanner(stale ? `Showing cached data \u2014 "${path || 'the ledger'}" unreachable.` : '');
+    render();
+  } catch (err) {
+    clearSkeleton();
+    showBanner(describeError(err), true);
+    els.list.innerHTML = '';
+    els.counterPill.textContent = '';
+  }
+}
+
+els.reloadBtn.onclick = () => refresh();
+const debouncedSearch = debounce(() => render(), 120);
+els.searchInput.addEventListener('input', () => { state.query = els.searchInput.value; debouncedSearch(); });
+els.searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && els.searchInput.value) { e.stopPropagation(); els.searchInput.value = ''; state.query = ''; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== els.searchInput && !els.settingsModal.classList.contains('hidden') === false) {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') { e.preventDefault(); els.searchInput.focus(); }
+  }
+});
+
+// ---- settings modal ----
+const settingsEls = {
+  manifestPath: document.getElementById('manifestPathInput'),
+  redetect: document.getElementById('redetectBtn'),
+  base: document.getElementById('aiBaseInput'),
+  key: document.getElementById('aiKeyInput'),
+  modelSelect: document.getElementById('aiModelSelect'),
+  fetchBtn: document.getElementById('fetchModelsBtn'),
+  addProviderBtn: document.getElementById('addProviderBtn'),
+  providerList: document.getElementById('providerList'),
+  spotifyToken: document.getElementById('spotifyTokenInput'),
+  youtubeKey: document.getElementById('youtubeKeyInput'),
+  status: document.getElementById('settingsStatus'),
+  save: document.getElementById('settingsSave'),
+  clear: document.getElementById('settingsClear'),
+  close: document.getElementById('settingsClose'),
+};
+
+function renderProviderList() {
+  const list = getFallbackProviders();
+  settingsEls.providerList.innerHTML = list.length
+    ? list.map((p, i) => `<div class="preset-btn" style="display:inline-flex;align-items:center;gap:6px;margin:0 4px 4px 0;">${escapeHtml(p.model)} <button data-remove-provider="${i}" style="color:var(--wax-catch);font-weight:700;">\u00d7</button></div>`).join('')
+    : '';
+  settingsEls.providerList.querySelectorAll('[data-remove-provider]').forEach(btn => {
+    btn.onclick = () => { const idx = +btn.dataset.removeProvider; const l = getFallbackProviders(); l.splice(idx, 1); lsSet(KEY_AI_PROVIDERS, l); renderProviderList(); };
+  });
+}
+
+function openSettings(note) {
+  const cfg = getActiveAiProfile();
+  settingsEls.manifestPath.value = lsGet(KEY_MANIFEST_PATH, '');
+  settingsEls.base.value = cfg.base === DEFAULT_AI_BASE ? '' : cfg.base;
+  settingsEls.key.value = cfg.key;
+  settingsEls.spotifyToken.value = lsGet(KEY_SPOTIFY_TOKEN, '');
+  settingsEls.youtubeKey.value = lsGet(KEY_YOUTUBE_KEY, '');
+  settingsEls.status.textContent = note || '';
+  if (cfg.model) settingsEls.modelSelect.innerHTML = `<option value="${escapeHtml(cfg.model)}">${escapeHtml(cfg.model)}</option>`;
+  renderProviderList();
+  els.settingsModal.classList.remove('hidden');
+  settingsEls.key.focus();
+}
+function closeSettings() { els.settingsModal.classList.add('hidden'); }
+
+els.settingsBtn.onclick = () => openSettings();
+settingsEls.close.onclick = closeSettings;
+els.settingsModal.addEventListener('click', e => { if (e.target === els.settingsModal) closeSettings(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !els.settingsModal.classList.contains('hidden')) closeSettings(); });
+
+document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => { btn.onclick = () => { settingsEls.base.value = btn.dataset.preset; }; });
+
+settingsEls.redetect.onclick = async () => {
+  lsSet(KEY_MANIFEST_PATH, settingsEls.manifestPath.value.trim() || '');
+  settingsEls.status.textContent = 'Re-detecting\u2026';
+  try {
+    const { path } = await discoverManifest(settingsEls.manifestPath.value.trim() || undefined);
+    settingsEls.status.textContent = `Found "${path}".`;
+    settingsEls.manifestPath.value = path;
+  } catch (err) { settingsEls.status.textContent = describeError(err); }
+};
+
+settingsEls.fetchBtn.onclick = async () => {
+  const key = settingsEls.key.value.trim();
+  const base = settingsEls.base.value.trim() || DEFAULT_AI_BASE;
+  if (!key) { settingsEls.status.textContent = 'Enter a key first.'; return; }
+  settingsEls.status.textContent = 'Fetching available models\u2026';
+  settingsEls.fetchBtn.disabled = true;
+  try {
+    const models = await fetchAvailableModels(base, key);
+    if (!models.length) { settingsEls.status.textContent = 'The provider returned no models.'; return; }
+    settingsEls.modelSelect.innerHTML = models.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.id)}${m.free ? ' (free)' : ''}</option>`).join('');
+    const savedModel = lsGet(KEY_AI_MODEL, '');
+    if (savedModel && models.some(m => m.id === savedModel)) settingsEls.modelSelect.value = savedModel;
+    settingsEls.status.textContent = `${models.length} models available.`;
+  } catch (err) { settingsEls.status.textContent = describeAiError(err); }
+  finally { settingsEls.fetchBtn.disabled = false; }
+};
+
+settingsEls.addProviderBtn.onclick = () => {
+  const key = settingsEls.key.value.trim(); const base = settingsEls.base.value.trim() || DEFAULT_AI_BASE; const model = settingsEls.modelSelect.value;
+  if (!key || !model) { settingsEls.status.textContent = 'Set a key and pick a model before saving it as a fallback.'; return; }
+  const list = getFallbackProviders(); list.push({ base, key, model }); lsSet(KEY_AI_PROVIDERS, list);
+  renderProviderList();
+  settingsEls.status.textContent = 'Saved as fallback provider.';
+};
+
+settingsEls.save.onclick = () => {
+  lsSet(KEY_AI_KEY, settingsEls.key.value.trim());
+  lsSet(KEY_AI_BASE, settingsEls.base.value.trim() || DEFAULT_AI_BASE);
+  lsSet(KEY_AI_MODEL, settingsEls.modelSelect.value);
+  lsSet(KEY_MANIFEST_PATH, settingsEls.manifestPath.value.trim() || '');
+  lsSet(KEY_SPOTIFY_TOKEN, settingsEls.spotifyToken.value.trim());
+  lsSet(KEY_YOUTUBE_KEY, settingsEls.youtubeKey.value.trim());
+  settingsEls.status.textContent = 'Saved.';
+  setTimeout(() => { closeSettings(); render(); }, 400);
+};
+
+settingsEls.clear.onclick = () => {
+  [KEY_AI_KEY, KEY_AI_MODEL, KEY_AI_PROVIDERS, KEY_SPOTIFY_TOKEN, KEY_YOUTUBE_KEY].forEach(k => lsSet(k, k === KEY_AI_PROVIDERS ? [] : ''));
+  settingsEls.key.value = ''; settingsEls.spotifyToken.value = ''; settingsEls.youtubeKey.value = '';
+  settingsEls.modelSelect.innerHTML = '<option value="">\u2014 fetch models first \u2014</option>';
+  renderProviderList();
+  settingsEls.status.textContent = 'All keys cleared from this browser.';
+};
+
 refresh();
 </script>
 </body>
