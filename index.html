@@ -1,987 +1,361 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Classical Codex</title>
+<title>The Hall — A Collection</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!--
-  v2 engineering notes (on top of the sovereign-ui v5 derivation already in
-  this file's visual language, unchanged below):
-
-  - Manifest is no longer a hardcoded path. A static page cannot list a
-    directory, so "auto-discovery" means probing a candidate list of common
-    filenames, parsing each, and keeping the first one that actually yields
-    entries. The resolved path is cached and overridable in Settings.
-  - AI calls now go through a list of provider profiles (OpenAI-compatible
-    base+key+model each), tried in order, so one dead/rate-limited provider
-    doesn't block a description. AI cache is keyed by work+model, so
-    switching models doesn't serve a stale answer from a different model.
-  - Apple Music links are real deep links (iTunes Search API, keyless, safe
-    client-side). Spotify and YouTube Music deep links to the *exact* album
-    require either an OAuth client-secret exchange (Spotify) or a server-side
-    key (YouTube Data API) -- neither can be done safely from a single static
-    HTML file, since any secret embedded in client JS is public. Rather than
-    fake that, both are optional: paste a short-lived Spotify token or a
-    restricted YouTube Data API key in Settings and real links resolve;
-    without one, the link is a labeled, honest search URL instead.
--->
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-:root {
-  --wall: #1c2a20;
-  --wall-dark: #11190f;
-  --cabinet-back: #26382c;
-  --frame-wood: #3a2415;
-  --paper: #ecdfc2;
-  --paper-lit: #f4e9cf;
-  --paper-edge: #c3ac7c;
-  --ink-fresh: #221a10;
-  --ink-oxidized: #5e3f22;
-  --ink-faint: #8c6c45;
-  --gilt: #9c7530;
-  --gilt-catch: #cb9f4e;
-  --gilt-shadow: #6b4e1f;
-  --wax: #93271b;
-  --wax-catch: #bb4530;
-  --wax-shadow: #601910;
-  --verdigris: #52735a;
-  --verdigris-dim: #37503c;
-  --text-primary: var(--ink-fresh);
-  --text-secondary: var(--ink-oxidized);
-  --text-dim: var(--ink-faint);
-  --text-inverse: var(--paper-lit);
-  --chrome: 'EB Garamond', 'Times New Roman', serif;
-  --body: 'Cormorant Garamond', 'EB Garamond', serif;
-  --radius: 2px;
-  --radius-lg: 3px;
-  --ease: cubic-bezier(.22,.61,.36,1);
-  color-scheme: light;
+:root{
+  --ivory:#e9e7e1; --ivory2:#e0ded5; --plaster:#dcdace;
+  --ink:#232321; --ink-dim:#5c5a52;
+  --walnut:#2e2b26; --walnut2:#1a1815;
+  --gilt:#6f6a52; --gilt-bright:#8c8468; --gilt-line: rgba(111,106,82,.3);
+  --velvet:#6e1f29; --velvet-bright:#9c2f3b; --velvet-dim:#4e151e;
+  --hairline: rgba(35,35,33,.16);
+  --shadow0: 0 1px 2px rgba(20,18,16,.08);
+  --shadow1: 0 3px 10px rgba(20,18,16,.16);
+  --shadow2: 0 10px 28px rgba(20,18,16,.3);
+  color-scheme: light dark;
 }
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ivory:#171614; --ivory2:#1d1c19; --plaster:#201f1b;
+    --ink:#e2e0d8; --ink-dim:#a9a69b;
+    --gilt:#9a927a; --gilt-bright:#b7ae8e; --gilt-line: rgba(154,146,122,.35);
+    --velvet:#b03e49; --velvet-bright:#cf5560; --velvet-dim:#8a2e38;
+    --hairline: rgba(226,224,216,.14);
+    --shadow0: 0 1px 2px rgba(0,0,0,.4); --shadow1: 0 3px 10px rgba(0,0,0,.5); --shadow2: 0 10px 28px rgba(0,0,0,.6);
+  }
 }
-*, *::before, *::after { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  background:
-    radial-gradient(ellipse 820px 640px at 18% -6%, rgba(203,159,78,.10) 0%, transparent 58%),
-    linear-gradient(155deg, var(--wall) 0%, var(--wall-dark) 100%);
-  background-attachment: fixed;
-  color: var(--text-primary);
-  font: 500 17px/1.55 var(--body);
-  -webkit-font-smoothing: antialiased;
+:root[data-theme="dark"]{
+  --ivory:#171614; --ivory2:#1d1c19; --plaster:#201f1b;
+  --ink:#e2e0d8; --ink-dim:#a9a69b;
+  --gilt:#9a927a; --gilt-bright:#b7ae8e; --gilt-line: rgba(154,146,122,.35);
+  --velvet:#b03e49; --velvet-bright:#cf5560; --velvet-dim:#8a2e38;
+  --hairline: rgba(226,224,216,.14);
+  --shadow0: 0 1px 2px rgba(0,0,0,.4); --shadow1: 0 3px 10px rgba(0,0,0,.5); --shadow2: 0 10px 28px rgba(0,0,0,.6);
 }
-button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
-button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid var(--wax-catch); outline-offset: 2px; border-radius: 1px;
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--ivory); color:var(--ink);
+  font-family:'Spectral', Georgia, 'Times New Roman', serif;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--walnut2);z-index:50;}
+.chrome{ font-family:'Cormorant Garamond', Georgia, serif; letter-spacing:.14em; text-transform:uppercase; }
 
-#app { max-width: 820px; margin: 0 auto; padding: 52px 20px 84px; }
-
-header.top {
-  display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 30px;
-  padding: 18px 20px 16px; border-radius: var(--radius-lg);
-  background: linear-gradient(165deg, var(--cabinet-back), var(--wall-dark));
-  box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 6px 14px -6px rgba(0,0,0,.55);
-  border: 1px solid rgba(156,117,48,.25);
+/* ===== PROSCENIUM HEADER ===== */
+.proscenium{
+  background: linear-gradient(180deg, var(--walnut2), var(--walnut));
+  color: var(--ivory); padding:22px 20px 16px; position:relative;
+  border-bottom:3px solid var(--velvet);
+  box-shadow: var(--shadow2);
 }
-.logo { margin: 0; font: 600 28px/1 var(--chrome); letter-spacing: .01em; color: var(--paper-lit); text-shadow: 0 1px 2px rgba(0,0,0,.5); }
-.logo .sub { display: block; font: italic 500 13px var(--body); color: var(--gilt-catch); letter-spacing: .03em; margin-top: 4px; }
-.spacer { flex: 1; }
-.counter-pill {
-  font: 600 14px var(--chrome); color: var(--wall-dark);
-  background: linear-gradient(160deg, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow));
-  border-radius: var(--radius); padding: 7px 15px;
-  display: inline-flex; align-items: center; gap: 8px;
-  box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 2px 5px rgba(0,0,0,.4);
+.proscenium::after{
+  content:""; position:absolute; left:0; right:0; bottom:-6px; height:3px;
+  background: repeating-linear-gradient(90deg, var(--velvet) 0 10px, transparent 10px 16px);
+  opacity:.55;
 }
-.counter-pill b { font-weight: 700; }
-.icon-btn {
-  min-width: 44px; min-height: 44px; border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, var(--gilt-catch), var(--gilt) 58%, var(--gilt-shadow));
-  display: grid; place-items: center; color: var(--wall-dark);
-  box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 2px 5px rgba(0,0,0,.45);
-  transition: transform 180ms var(--ease), box-shadow 180ms var(--ease);
+.proscenium h1{ margin:0; font-size:26px; font-weight:500; }
+.proscenium .sub{ margin-top:4px; font-size:12px; color:#b7a98f; letter-spacing:.12em; }
+.stat-rail{ display:flex; gap:18px; margin-top:16px; flex-wrap:wrap; }
+.stat-rail .s{ font-size:11px; color:#a69c87; }
+.stat-rail .s b{ display:block; font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--velvet-bright); font-weight:600; }
+
+/* ===== STALLS (controls, base layer) ===== */
+.stalls{ background:var(--plaster); border-bottom:1px solid var(--hairline); padding:14px 20px; position:sticky; top:0; z-index:20; box-shadow:var(--shadow0);}
+.row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+input[type=text], select{
+  font-family:'Spectral',serif; font-size:14px; background:var(--ivory2); color:var(--ink);
+  border:1px solid var(--hairline); border-radius:2px; padding:8px 10px;
 }
-.icon-btn:hover { transform: translateY(-1px) rotate(-10deg); box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 4px 9px rgba(0,0,0,.5); }
-.icon-btn:active { transform: translateY(0) rotate(0) scale(.95); }
-.icon-btn.small { min-width: 32px; min-height: 32px; }
-
-.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
-.toolbar input[type="search"] {
-  flex: 1 1 200px; min-width: 0; color: var(--ink-fresh); font: 500 17px var(--body); font-style: italic;
-  padding: 12px 18px; min-height: 46px; border-radius: var(--radius);
-  background: linear-gradient(115deg, rgba(255,255,255,.14) 0%, transparent 30%), linear-gradient(180deg, var(--paper-lit), var(--paper));
-  border: 1px solid rgba(156,117,48,.4);
-  box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 10px -3px rgba(0,0,0,.5);
-  transition: box-shadow 180ms var(--ease), border-color 180ms var(--ease);
+input[type=text]{ flex:1; min-width:160px; }
+select.chrome{ font-size:11px; padding:8px 8px; }
+.toggle-group{ display:flex; border:1px solid var(--gilt-line); border-radius:2px; overflow:hidden; }
+.toggle-group button{
+  font-family:'Cormorant Garamond',serif; letter-spacing:.1em; text-transform:uppercase; font-size:11px;
+  background:transparent; color:var(--ink-dim); border:none; padding:8px 12px; cursor:pointer;
+  border-right:1px solid var(--gilt-line);
 }
-.toolbar input[type="search"]::placeholder { color: var(--text-dim); font-style: italic; }
-.toolbar input[type="search"]:focus {
-  outline: none; border-color: var(--wax);
-  box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 10px -3px rgba(0,0,0,.5), 0 0 0 3px rgba(147,39,27,.2);
+.toggle-group button:last-child{ border-right:none; }
+.toggle-group button.active{ background:var(--velvet); color:var(--ivory); font-weight:600; }
+button.linklike{ background:none;border:none;color:var(--velvet-bright);font-family:inherit;cursor:pointer;text-decoration:underline;font-size:12px;padding:0; }
+
+/* ===== PARTERRE (list of works, elevated tier) ===== */
+.parterre{ padding:4px 0 60px; }
+.era-tier{ padding:10px 20px 2px; position:sticky; top:62px; background:var(--ivory); z-index:10; border-bottom:1px solid var(--gilt-line); }
+.era-tier h2{ margin:0; font-size:13px; font-weight:600; color:var(--velvet-bright); }
+.work-row{
+  display:grid; grid-template-columns: 34px 1fr auto; gap:12px; align-items:start;
+  padding:14px 20px; border-bottom:1px solid var(--hairline); background:var(--ivory);
+  transition: background .12s ease-out;
 }
-
-.chiprow { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 16px; }
-.chip {
-  min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 15px; border-radius: 16px;
-  background: var(--cabinet-back); border: 1px solid rgba(156,117,48,.3); color: var(--paper);
-  font: 500 14px var(--chrome); letter-spacing: .01em;
-  box-shadow: 0 2px 4px rgba(0,0,0,.35);
-  transition: color 160ms var(--ease), box-shadow 160ms var(--ease), transform 160ms var(--ease), border-color 160ms var(--ease);
+.work-row:hover{ background:var(--ivory2); }
+.work-row.owned{ border-left:3px solid var(--velvet); }
+.work-row.wanted{ border-left:3px solid var(--gilt-line); }
+.seal{ width:30px;height:30px;border-radius:50%;border:1.5px solid var(--gilt-line); display:flex;align-items:center;justify-content:center;
+  cursor:pointer; background:var(--ivory2); font-size:14px; color:var(--ink-dim); user-select:none; }
+.seal.on{ background:var(--velvet); color:var(--ivory); box-shadow:0 0 0 2px var(--velvet-dim); }
+.w-main .composer{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim); font-family:'Cormorant Garamond',serif;}
+.w-main .title{ font-size:16px; margin:2px 0 4px; }
+.w-main .dur{ font-size:11px; color:var(--ink-dim); }
+.w-main .best{ font-size:13px; margin-top:6px; }
+.w-main .best b{ color:var(--velvet-bright); font-weight:600; }
+.alts{ font-size:12px; color:var(--ink-dim); margin-top:3px; }
+.stars{ display:flex; gap:2px; cursor:pointer; margin-top:8px; }
+.stars span{ color:var(--hairline); font-size:15px; }
+.stars span.on{ color:var(--velvet-bright); }
+textarea.notes{
+  width:100%; margin-top:8px; font-family:'Spectral',serif; font-size:12px; background:var(--ivory2);
+  border:1px solid var(--hairline); color:var(--ink); border-radius:2px; padding:6px; resize:vertical; min-height:34px;
 }
-.chip:hover { color: var(--gilt-catch); transform: translateY(-1px); border-color: var(--gilt); }
-.chip.active {
-  color: var(--paper-lit); background: radial-gradient(circle at 32% 28%, var(--wax-catch), var(--wax) 55%, var(--wax-shadow));
-  border-color: transparent;
-  box-shadow: 0 1px 0 rgba(255,255,255,.2) inset, 0 3px 7px rgba(0,0,0,.45);
+.links{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+.links a{ font-size:11px; color:var(--ivory); background:var(--walnut); padding:4px 8px; border-radius:2px; text-decoration:none; letter-spacing:.05em; border:1px solid var(--gilt-line); }
+.w-right{ text-align:right; min-width:90px;}
+.empty{ padding:60px 20px; text-align:center; color:var(--ink-dim); font-style:italic; }
+
+/* ===== GALLERY (floating/temporary layer — modal) ===== */
+.gallery-overlay{ position:fixed; inset:0; background:rgba(20,15,10,.55); display:none; align-items:flex-end; justify-content:center; z-index:40; }
+.gallery-overlay.open{ display:flex; }
+.gallery-card{
+  background:var(--plaster); width:min(480px,94vw); margin-bottom:4vh; border-radius:4px 4px 2px 2px;
+  box-shadow:var(--shadow2); border-top:3px solid var(--velvet); padding:18px; max-height:80vh; overflow:auto;
+  animation: rise .18s ease-out;
 }
-.chip .count { opacity: .72; font-variant-numeric: oldstyle-nums; }
-.chip.status-owned.active { background: radial-gradient(circle at 32% 28%, var(--wax-catch), var(--wax) 55%, var(--wax-shadow)); }
-.chip.status-wanted.active { background: radial-gradient(circle at 32% 28%, #7fa186, var(--verdigris) 55%, var(--verdigris-dim)); }
-
-.state-banner {
-  border-radius: var(--radius); padding: 13px 18px; background: var(--cabinet-back);
-  margin-bottom: 18px; display: flex; align-items: center; gap: 12px; font: 500 15px var(--body); color: var(--paper);
-  border-left: 3px solid var(--gilt); box-shadow: 0 2px 6px rgba(0,0,0,.35);
+@keyframes rise{ from{ transform:translateY(16px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+.gallery-card h3{ margin:0 0 10px; font-size:14px; color:var(--velvet-bright); }
+.gallery-card label{ display:block; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim); margin:10px 0 4px;}
+.gallery-row{ display:flex; justify-content:flex-end; gap:10px; margin-top:14px;}
+button.btn{
+  font-family:'Cormorant Garamond',serif; text-transform:uppercase; letter-spacing:.1em; font-size:12px;
+  background:var(--velvet); color:var(--ivory); border:none; padding:8px 16px; border-radius:2px; cursor:pointer; font-weight:600;
 }
-.state-banner.error { color: #e8c4bb; border-left-color: var(--wax); background: #2e1612; }
-.state-banner button { color: var(--gilt-catch); font-weight: 600; min-height: 40px; display: inline-flex; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
-
-.skeleton-section { margin-bottom: 32px; }
-.skeleton-head { width: 220px; height: 15px; border-radius: 2px; background: var(--cabinet-back); margin-bottom: 12px; animation: pulse 1.6s ease-in-out infinite; }
-.skeleton-row { height: 64px; border-radius: var(--radius); background: var(--cabinet-back); margin-bottom: 10px; animation: pulse 1.6s ease-in-out infinite; border: 1px solid rgba(156,117,48,.2); }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
-
-.era-section { margin-bottom: 34px; opacity: 0; animation: era-in 420ms var(--ease) forwards; }
-@keyframes era-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.era-head {
-  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-  padding: 14px 18px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  background: linear-gradient(160deg, var(--frame-wood), #26160c);
-  border: 1px solid var(--gilt-shadow); border-bottom: none;
-  box-shadow: 3px 10px 18px -8px rgba(0,0,0,.6);
-}
-.era-head h2 { margin: 0; font: 600 20px var(--chrome); color: var(--paper-lit); letter-spacing: .02em; }
-.era-dates { font: italic 500 13px var(--body); color: var(--gilt-catch); }
-.era-progress { font: 600 12px var(--chrome); color: var(--wall-dark); background: var(--gilt-catch); border-radius: 10px; padding: 3px 11px; margin-left: auto; }
-@media (max-width: 520px) { .era-progress { margin-left: 0; } }
-
-.work-list { display: flex; flex-direction: column; gap: 1px; padding: 10px; background: var(--frame-wood); border: 1px solid var(--gilt-shadow); border-top: none; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
-
-.work-card {
-  background: var(--paper); border-radius: var(--radius);
-  padding: 15px 17px; margin: 3px;
-  box-shadow: 1px 6px 10px -3px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.4) inset;
-  transition: box-shadow 200ms var(--ease), transform 200ms var(--ease);
-  opacity: 0; animation: card-in 320ms var(--ease) forwards;
-}
-.work-card:hover { transform: translateY(-2px) rotate(-.2deg); box-shadow: 2px 14px 22px -6px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.4) inset; }
-@keyframes card-in { from { opacity: 0; transform: translateY(6px) rotate(-.4deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
-
-.work-top { display: flex; align-items: flex-start; gap: 13px; }
-.status-dot { flex: none; width: 15px; height: 15px; border-radius: 50%; margin-top: 5px; }
-.status-dot.owned { background: radial-gradient(circle at 32% 28%, var(--wax-catch), var(--wax) 55%, var(--wax-shadow)); box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 2px 4px rgba(0,0,0,.4); }
-.status-dot.wanted { background: var(--verdigris); opacity: .85; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
-.work-main { flex: 1; min-width: 0; }
-.work-title { margin: 0; font: 600 17px var(--chrome); color: var(--ink-fresh); line-height: 1.4; }
-.work-composer { color: var(--wax-shadow); font-weight: 600; }
-.work-meta { font: italic 500 13px var(--body); color: var(--ink-faint); margin-top: 2px; }
-.expand-btn { flex: none; min-width: 36px; min-height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-faint); transition: transform 220ms var(--ease), color 160ms var(--ease); }
-.expand-btn:hover { color: var(--wax); }
-.work-card.open .expand-btn { transform: rotate(180deg); color: var(--wax); }
-.expand-btn svg { width: 11px; height: 11px; }
-
-.recordings { max-height: 0; overflow: hidden; transition: max-height 280ms var(--ease); }
-.work-card.open .recordings { max-height: 420px; overflow-y: auto; }
-.recordings-inner { padding-top: 13px; margin-top: 11px; border-top: 1px solid var(--paper-edge); display: flex; flex-direction: column; gap: 9px; }
-.recording-row { display: flex; gap: 10px; align-items: baseline; font: 500 15px var(--body); }
-.recording-tag { flex: none; font: 600 10px var(--chrome); letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 8px; color: var(--paper-lit); background: var(--wax-shadow); }
-.recording-row.alt .recording-tag { background: var(--ink-faint); }
-.recording-text { color: var(--ink-oxidized); font-style: italic; }
-
-.empty-state { text-align: center; padding: 60px 20px; color: var(--cabinet-back); }
-.empty-illustration { margin: 0 auto 14px; width: 54px; height: 54px; opacity: .75; }
-.empty-state p { color: var(--paper); font: italic 500 17px var(--body); }
-.empty-state button { margin-top: 16px; display: inline-flex; min-height: 44px; padding: 0 22px; align-items: center; border-radius: var(--radius); background: radial-gradient(circle at 32% 28%, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow)); color: var(--wall-dark); font: 600 14px var(--chrome); box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 3px 8px rgba(0,0,0,.45); }
-
-.hidden { display: none !important; }
-@media (max-width: 520px) { #app { padding: 36px 14px 64px; } }
-
-.detail-row { display: flex; gap: 14px; margin-bottom: 14px; }
-.detail-art {
-  flex: none; width: 120px; height: 120px; border-radius: var(--radius);
-  background: var(--frame-wood); display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 3px 8px rgba(0,0,0,.4);
-  overflow: hidden; position: relative; cursor: pointer;
-}
-.detail-art[data-has-art="1"]:hover::after {
-  content: 'Ask the Archive'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  text-align: center; padding: 6px; font: 600 11px var(--chrome); color: var(--paper-lit); background: rgba(17,25,15,.72);
-}
-.detail-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.detail-art.loading { position: relative; }
-.detail-art.loading::before { content: ''; width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(203,159,78,.25); border-top-color: var(--gilt-catch); animation: spin 900ms linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.detail-art-fallback { font: italic 500 12px var(--body); color: var(--ink-faint); padding: 8px; text-align: center; }
-
-.detail-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.detail-links { display: flex; gap: 8px; flex-wrap: wrap; }
-.service-link { font: 600 12px var(--chrome); letter-spacing: .01em; padding: 5px 11px; border-radius: 12px; border: 1px solid var(--paper-edge); color: var(--ink-oxidized); transition: border-color 160ms var(--ease), color 160ms var(--ease); }
-.service-link:hover { border-color: var(--wax); color: var(--wax); }
-.service-link[aria-disabled="true"] { pointer-events: none; opacity: .5; }
-.service-link .svc-note { font-weight: 500; font-style: italic; opacity: .7; }
-
-.ai-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.ask-ai-btn { align-self: flex-start; font: 600 13px var(--chrome); padding: 7px 14px; border-radius: var(--radius); background: radial-gradient(circle at 32% 28%, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow)); color: var(--wall-dark); box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 2px 5px rgba(0,0,0,.4); }
-.regen-btn { font: 600 12px var(--chrome); color: var(--ink-faint); text-decoration: underline; text-underline-offset: 2px; }
-.regen-btn:hover { color: var(--wax); }
-.ai-status { font: italic 500 13px var(--body); color: var(--ink-faint); }
-.ai-status.error { color: var(--wax-shadow); }
-.ai-text { font: 500 14.5px/1.55 var(--body); color: var(--ink-oxidized); font-style: italic; margin: 0; }
-.ai-meta { font: 500 11px var(--chrome); color: var(--ink-faint); letter-spacing: .02em; }
-.retry-link { color: var(--wax); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
-
-.modal-backdrop { position: fixed; inset: 0; background: rgba(10,8,5,.6); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20; overflow-y: auto; }
-.modal-sheet { width: 100%; max-width: 460px; max-height: 86vh; overflow-y: auto; background: var(--cabinet-back); border: 1px solid var(--gilt-shadow); border-radius: var(--radius-lg); padding: 22px; box-shadow: 0 20px 50px -12px rgba(0,0,0,.7); }
-.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.modal-head h2 { margin: 0; font: 600 20px var(--chrome); color: var(--paper-lit); }
-.modal-note { font: italic 500 13px/1.5 var(--body); color: var(--paper); opacity: .85; margin: 0 0 16px; }
-.modal-section-title { font: 600 12px var(--chrome); color: var(--gilt-catch); letter-spacing: .04em; text-transform: uppercase; margin: 18px 0 8px; }
-.modal-section-title:first-of-type { margin-top: 0; }
-.modal-field { display: block; margin-bottom: 12px; }
-.modal-field span { display: block; font: 600 12px var(--chrome); color: var(--gilt-catch); margin-bottom: 5px; letter-spacing: .02em; }
-.modal-field input, .modal-field select { width: 100%; font: 500 15px var(--body); color: var(--ink-fresh); background: var(--paper); border: 1px solid var(--paper-edge); border-radius: var(--radius); padding: 9px 12px; min-height: 40px; }
-.model-row { display: flex; gap: 8px; }
-.model-row select { flex: 1; min-width: 0; }
-.modal-status { font: italic 500 13px var(--body); color: var(--paper); min-height: 18px; margin-bottom: 14px; }
-.modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.modal-btn { font: 600 13px var(--chrome); padding: 8px 15px; border-radius: var(--radius); background: var(--frame-wood); color: var(--paper); border: 1px solid var(--gilt-shadow); }
-.modal-btn.primary { background: radial-gradient(circle at 32% 28%, var(--gilt-catch), var(--gilt) 60%, var(--gilt-shadow)); color: var(--wall-dark); border-color: transparent; }
-.preset-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.preset-btn { font: 600 11px var(--chrome); padding: 4px 10px; border-radius: 10px; border: 1px solid var(--gilt-shadow); color: var(--paper); }
-.preset-btn:hover { border-color: var(--gilt-catch); color: var(--gilt-catch); }
-
-@media (max-width: 520px) { .detail-row { flex-direction: column; } .detail-art { width: 100%; height: 160px; } }
+button.btn.ghost{ background:transparent; border:1px solid var(--gilt-line); color:var(--ink); }
+.foot-rail{ position:fixed; bottom:0; left:0; right:0; background:var(--walnut2); color:#a69c87; font-size:11px; padding:8px 16px; display:flex; gap:14px; justify-content:center; letter-spacing:.08em; padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)); z-index:30; }
+.foot-rail button{ background:none; border:none; color:#a69c87; font-family:'Cormorant Garamond',serif; letter-spacing:.1em; text-transform:uppercase; font-size:11px; cursor:pointer; text-decoration:underline; }
 </style>
 </head>
 <body>
-<div id="app">
-  <header class="top">
-    <h1 class="logo">Classical Codex<span class="sub">A Ledger of Works, Kept</span></h1>
-    <div class="spacer"></div>
-    <span class="counter-pill" id="counterPill" aria-live="polite"></span>
-    <button class="icon-btn" id="settingsBtn" aria-label="Open archive settings" title="Settings">
-      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M8 1.5v2M8 12.5v2M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M1.5 8h2M12.5 8h2M3.3 12.7l1.4-1.4M11.3 4.7l1.4-1.4"/>
-        <circle cx="8" cy="8" r="2.6"/>
-      </svg>
-    </button>
-    <button class="icon-btn" id="reloadBtn" aria-label="Reload the ledger" title="Reload">
-      <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-        <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/>
-        <path d="M13.5 2.5v3.5h-3.5"/>
-      </svg>
-    </button>
-  </header>
-
-  <div class="toolbar">
-    <input type="search" id="searchInput" placeholder="Seek a composer or a work (press / to focus)" aria-label="Search">
-  </div>
-
-  <div class="chiprow" id="statusChips" role="group" aria-label="Filter by status"></div>
-  <div class="chiprow" id="eraChips" role="group" aria-label="Filter by era"></div>
-
-  <div id="banner"></div>
-  <div id="skeleton"></div>
-  <main id="list" aria-live="polite"></main>
+<div class="proscenium">
+  <div class="chrome sub">The Hall — Register of Recordings</div>
+  <h1>Your Collection</h1>
+  <div class="stat-rail" id="statRail"></div>
 </div>
 
-<svg class="sr-only"><defs>
-  <path id="swash" d="M2 10 C 14 2, 26 2, 38 10 S 62 18, 74 10" />
-</defs></svg>
-
-<div class="modal-backdrop hidden" id="settingsModal">
-  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-    <div class="modal-head">
-      <h2 id="settingsTitle">Archive Counsel</h2>
-      <button class="icon-btn small" id="settingsClose" aria-label="Close settings">
-        <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9"/></svg>
-      </button>
+<div class="stalls">
+  <div class="row">
+    <input type="text" id="q" placeholder="Search composer, work, performer…">
+    <select id="eraSel" class="chrome"></select>
+    <select id="sortSel" class="chrome">
+      <option value="era">Sort: Programme order</option>
+      <option value="composer">Sort: Composer</option>
+      <option value="title">Sort: Title</option>
+      <option value="rating">Sort: Your rating</option>
+    </select>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <div class="toggle-group" id="statusFilter">
+      <button data-v="all" class="active">All</button>
+      <button data-v="owned">Seated</button>
+      <button data-v="wanted">Waiting list</button>
     </div>
-    <p class="modal-note">Every key below is kept only in this browser's local storage and sent directly to the provider you choose — never through any server of this page's. Anyone with access to this browser or its scripts can read it; use keys you've scoped/restricted and don't mind rotating.</p>
+    <button class="linklike" id="exportJson">Export JSON</button>
+    <button class="linklike" id="exportCsv">Export CSV</button>
+  </div>
+</div>
 
-    <div class="modal-section-title">Ledger source</div>
-    <label class="modal-field">
-      <span>Manifest path (override auto-detect)</span>
-      <input type="text" id="manifestPathInput" placeholder="auto-detected">
-    </label>
-    <div class="modal-actions" style="margin-bottom:14px;">
-      <button class="modal-btn" id="redetectBtn" type="button">Re-detect</button>
-    </div>
+<div class="parterre" id="list"></div>
 
-    <div class="modal-section-title">AI description provider</div>
-    <div class="preset-row">
-      <button class="preset-btn" data-preset="https://openrouter.ai/api/v1" type="button">OpenRouter</button>
-      <button class="preset-btn" data-preset="https://api.groq.com/openai/v1" type="button">Groq</button>
-      <button class="preset-btn" data-preset="https://api.together.xyz/v1" type="button">Together</button>
-    </div>
-    <label class="modal-field">
-      <span>Base URL</span>
-      <input type="text" id="aiBaseInput" placeholder="https://openrouter.ai/api/v1">
-    </label>
-    <label class="modal-field">
-      <span>API key</span>
-      <input type="password" id="aiKeyInput" placeholder="sk-…" autocomplete="off">
-    </label>
-    <div class="modal-field">
-      <span>Model</span>
-      <div class="model-row">
-        <select id="aiModelSelect"><option value="">— fetch models first —</option></select>
-        <button class="modal-btn" id="fetchModelsBtn" type="button">Fetch models</button>
+<div class="gallery-overlay" id="overlay">
+  <div class="gallery-card" id="galleryCard"></div>
+</div>
+
+<div class="foot-rail">
+  <span id="footCount"></span>
+  <button id="resetBtn">Reset my marks</button>
+</div>
+
+<script id="data" type="application/json">
+[{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"Suite bergamasque including Clair de lune, L. 75","duration":"Complete, ~15 min","owned":true,"best":"Jean-Yves Thibaudet (piano)","alts":["Alexandre Tharaud (piano)","Arturo Benedetti Michelangeli (piano)"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"La Mer, L. 109","duration":"Complete, ~25 min","owned":true,"best":"Claudio Abbado / Berlin Philharmonic","alts":["Herbert von Karajan / Berlin Philharmonic","Pierre Boulez / Cleveland Orchestra"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Boléro, M. 81","duration":"Complete, ~15 min","owned":true,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["André Previn / London Symphony Orchestra","Pierre Boulez / Berlin Philharmonic"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"Prélude à l'après-midi d'un faune, L. 86","duration":"Complete, ~10 min","owned":false,"best":"Claudio Abbado / Berlin Philharmonic","alts":["Pierre Boulez / Cleveland Orchestra","Herbert von Karajan / Berlin Philharmonic"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Piano Concerto in G Major, M. 83","duration":"Complete, ~25 min","owned":false,"best":"Martha Argerich (piano) / Claudio Abbado / Berlin Philharmonic","alts":["Krystian Zimerman (piano) / Pierre Boulez / Cleveland Orchestra","Jean-Yves Thibaudet (piano) / Charles Dutoit / Montréal Symphony Orchestra"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Daphnis et Chloé, M. 57","duration":"Complete, ~60 min","owned":false,"best":"Pierre Boulez / Berlin Philharmonic","alts":["Charles Dutoit / Montréal Symphony Orchestra","Simon Rattle / City of Birmingham Symphony"]},{"era":"IMPRESSIONIST","composer":"Erik Satie","work":"Gymnopédies","duration":"Complete, ~10 min","owned":false,"best":"Alexandre Tharaud (piano)","alts":["Jean-Yves Thibaudet (piano)","Pascal Rogé (piano)"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Gaspard de la nuit, M. 55","duration":"Complete, ~25 min","owned":false,"best":"Martha Argerich (piano)","alts":["Ivo Pogorelich (piano)","Yuja Wang (piano)"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"Images for Piano","duration":"Complete, ~30 min","owned":false,"best":"Arturo Benedetti Michelangeli (piano)","alts":["Jean-Yves Thibaudet (piano)","Alexandre Tharaud (piano)"]},{"era":"IMPRESSIONIST","composer":"Erik Satie","work":"Gnossiennes","duration":"Complete, ~20 min","owned":false,"best":"Alexandre Tharaud (piano)","alts":["Jean-Yves Thibaudet (piano)","Aldo Ciccolini (piano)"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"Préludes, Books I and II, L. 117 and L. 123","duration":"Complete, ~90 min","owned":false,"best":"Mitsuko Uchida (piano)","alts":["Krystian Zimerman (piano)","Walter Gieseking (piano)"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"String Quartet in F Major, M. 35","duration":"Complete, ~30 min","owned":false,"best":"Hagen Quartett","alts":["Emerson String Quartet","Alban Berg Quartett"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"String Quartet in G Minor, L. 85","duration":"Complete, ~25 min","owned":false,"best":"Hagen Quartett","alts":["Emerson String Quartet","Alban Berg Quartett"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"Pelléas et Mélisande, L. 88","duration":"Complete, ~3 hrs","owned":false,"best":"Pierre Boulez / Royal Opera House Orchestra","alts":["Ernest Ansermet / Orchestre de la Suisse Romande","Charles Dutoit / Montréal Symphony Orchestra"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Miroirs, M. 43","duration":"Complete, ~30 min","owned":false,"best":"Jean-Yves Thibaudet (piano)","alts":["Samson François (piano)","Walter Gieseking (piano)"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Introduction and Allegro for Harp, M. 46","duration":"Complete, ~10 min","owned":false,"best":"Osian Ellis (harp) / Melos Ensemble","alts":["Lily Laskine (harp) / Jean-Pierre Rampal / Jean Hubeau","Marielle Nordmann (harp)"]},{"era":"IMPRESSIONIST","composer":"Gabriel Fauré","work":"Requiem, Op. 48","duration":"Complete, ~35 min","owned":false,"best":"Michel Corboz / Ensemble Vocal de Lausanne","alts":["Philippe Herreweghe / Orchestre de Paris","Andrew Davis / BBC Symphony"]},{"era":"IMPRESSIONIST","composer":"Gabriel Fauré","work":"Piano Quartets, Op. 15 and Op. 45","duration":"~75 min combined","owned":false,"best":"Domus Chamber Ensemble","alts":["Beaux Arts Trio with Walter Trampler","Isaac Stern / Emanuel Ax / Jaime Laredo / Yo-Yo Ma"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"Nocturnes for Orchestra, L. 91","duration":"Complete, ~25 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Pierre Boulez / Cleveland Orchestra","Claudio Abbado / Berlin Philharmonic"]},{"era":"IMPRESSIONIST","composer":"Erik Satie","work":"Trois morceaux en forme de poire","duration":"Complete, ~25 min, piano duet","owned":false,"best":"Alexandre Tharaud (piano) / Jean-Baptiste Fonlupt (piano)","alts":["Katia and Marielle Labèque (piano)","Aldo Ciccolini (piano) / Gabriel Tacchino (piano)"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Histoires naturelles, M. 47","duration":"Complete, ~20 min","owned":false,"best":"Gérard Souzay (baritone) / Dalton Baldwin (piano)","alts":["Pierre Bernac (baritone) / Francis Poulenc (piano)","José van Dam (bass-baritone) / Dalton Baldwin (piano)"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"Études, Books I and II, L. 136","duration":"Complete, ~55 min","owned":false,"best":"Pierre-Laurent Aimard (piano)","alts":["Mitsuko Uchida (piano)","Krystian Zimerman (piano)"]},{"era":"IMPRESSIONIST","composer":"Erik Satie","work":"Vexations","duration":"Complete, ~18–24 hrs depending on tempo","owned":false,"best":"Reinbert de Leeuw (piano)","alts":["Nicolas Horvath (piano)","John Cage et al. (1963 relay performance)"]},{"era":"IMPRESSIONIST","composer":"Claude Debussy","work":"En blanc et noir for Two Pianos, L. 134","duration":"Complete, ~25 min","owned":false,"best":"Martha Argerich (piano) / Alexandra Rabinovitch-Barakovsky (piano)","alts":["Katia and Marielle Labèque (piano)","Paul Crossley / Philip Langridge"]},{"era":"IMPRESSIONIST","composer":"Maurice Ravel","work":"Valses nobles et sentimentales, M. 61","duration":"Complete, ~15 min","owned":false,"best":"Samson François (piano)","alts":["Jean-Yves Thibaudet (piano)","Walter Gieseking (piano)"]},{"era":"IMPRESSIONIST","composer":"Gabriel Fauré","work":"Barcarolles","duration":"Complete, ~60 min","owned":false,"best":"Jean-Philippe Collard (piano)","alts":["Paul Crossley (piano)","Kathryn Stott (piano)"]},{"era":"IMPRESSIONIST","composer":"Paul Dukas","work":"The Sorcerer's Apprentice","duration":"Complete, ~10 min","owned":false,"best":"Pierre Boulez / Cleveland Orchestra","alts":["Herbert von Karajan / Berlin Philharmonic","Leonard Bernstein / New York Philharmonic"]},{"era":"IMPRESSIONIST","composer":"Albert Roussel","work":"Symphony No. 3 in G Minor, Op. 42","duration":"Complete, ~25 min","owned":false,"best":"Charles Munch / Boston Symphony Orchestra","alts":["Paavo Järvi / Orchestre de Paris","Charles Dutoit / Montréal Symphony Orchestra"]},{"era":"IMPRESSIONIST","composer":"Vincent d'Indy","work":"Symphony on a French Mountain Air, Op. 25","duration":"Complete, ~25 min","owned":false,"best":"Pascal Rogé (piano) / Charles Dutoit / Montréal Symphony Orchestra","alts":["Monique Haas (piano) / Carl Schuricht / Orchestre de Paris","Sylvie Carbonel (piano) / Eliahu Inbal / Monte Carlo Philharmonic"]},{"era":"IMPRESSIONIST","composer":"Olivier Messiaen","work":"Préludes for Piano","duration":"Complete, ~30 min","owned":false,"best":"Yvonne Loriod (piano)","alts":["Peter Hill (piano)","Roger Muraro (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Symphony No. 8 in B Minor \"Unfinished\", D. 759","duration":"Complete, ~25 min","owned":true,"best":"Carlos Kleiber / Vienna Philharmonic","alts":["Herbert von Karajan / Berlin Philharmonic","Claudio Abbado / Berlin Philharmonic"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Piano Quintet in A Major \"Trout\", D. 667","duration":"Complete, ~40 min","owned":true,"best":"András Schiff (piano) / Hagen Quartett","alts":["Alfred Brendel (piano) / Cleveland Quartet","Emanuel Ax (piano) / Cleveland Quartet"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Winterreise, D. 911","duration":"Complete, ~70 min","owned":false,"best":"Dietrich Fischer-Dieskau (baritone) / Gerald Moore (piano)","alts":["Ian Bostridge (tenor) / Leif Ove Andsnes (piano)","Matthias Goerne (baritone) / Alfred Brendel (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"String Quartet No. 14 in D Minor \"Death and the Maiden\", D. 810","duration":"Complete, ~40 min","owned":false,"best":"Emerson String Quartet","alts":["Alban Berg Quartett","Hagen Quartett"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Symphony No. 9 in C Major \"Great\", D. 944","duration":"Complete, ~55 min","owned":true,"best":"Wilhelm Furtwängler / Berlin Philharmonic","alts":["Carlos Kleiber / Concertgebouw Orchestra","Claudio Abbado / Berlin Philharmonic"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Die schöne Müllerin, D. 795","duration":"Complete, ~65 min","owned":false,"best":"Dietrich Fischer-Dieskau (baritone) / Gerald Moore (piano)","alts":["Ian Bostridge (tenor) / Graham Johnson (piano)","Peter Schreier (tenor) / Sviatoslav Richter (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Schwanengesang, D. 957","duration":"Complete, ~55 min","owned":false,"best":"Matthias Goerne (baritone) / Alfred Brendel (piano)","alts":["Dietrich Fischer-Dieskau (baritone) / Gerald Moore (piano)","Hans Hotter (baritone) / Gerald Moore (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Impromptus, D. 899 and D. 935","duration":"Complete, ~60 min combined","owned":false,"best":"Alfred Brendel (piano)","alts":["Mitsuko Uchida (piano)","Sviatoslav Richter (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Piano Sonata in B-flat Major, D. 960","duration":"Complete, ~35 min","owned":false,"best":"Alfred Brendel (piano)","alts":["Mitsuko Uchida (piano)","Sviatoslav Richter (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"String Quintet in C Major, D. 956","duration":"Complete, ~50 min","owned":false,"best":"Emerson String Quartet / Mstislav Rostropovich (cello)","alts":["Alban Berg Quartett / Heinrich Schiff (cello)","Isaac Stern / Emanuel Ax / Jaime Laredo / Yo-Yo Ma / Michael Tree"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Octet in F Major, D. 803","duration":"Complete, ~55 min","owned":false,"best":"Academy of St Martin in the Fields Chamber Ensemble","alts":["Consortium Classicum","Berlin Philharmonic Octet"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Fantasy in C Major \"Wanderer\", D. 760","duration":"Complete, ~20 min","owned":false,"best":"Sviatoslav Richter (piano)","alts":["Alfred Brendel (piano)","András Schiff (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Mass in E-flat Major, D. 950","duration":"Complete, ~40 min","owned":false,"best":"Nikolaus Harnoncourt / Arnold Schoenberg Choir / Concentus Musicus Wien","alts":["Philippe Herreweghe / Collegium Vocale Gent","Claudio Abbado / Vienna Philharmonic"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Moments Musicaux, D. 780","duration":"Complete, ~25 min","owned":false,"best":"Alfred Brendel (piano)","alts":["Radu Lupu (piano)","Sviatoslav Richter (piano)"]},{"era":"SCHUBERT","composer":"Franz Schubert","work":"Piano Sonata in A Major, D. 959","duration":"Complete, ~35 min","owned":false,"best":"Mitsuko Uchida (piano)","alts":["Alfred Brendel (piano)","Leif Ove Andsnes (piano)"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 5 in C-sharp Minor","duration":"Complete, ~70 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Leonard Bernstein / Vienna Philharmonic","Claudio Abbado / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symaphony No. 9 in D Major","duration":"Complete, ~80 min","owned":false,"best":"Leonard Bernstein / Berlin Philharmonic","alts":["Herbert von Karajan / Berlin Philharmonic","Carlo Maria Giulini / Chicago Symphony"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Anton Bruckner","work":"Symphony No. 9 in D Minor, WAB 109","duration":"Complete, ~65 min","owned":false,"best":"Herbert von Karajan / Vienna Philharmonic","alts":["Eugen Jochum / Berlin Philharmonic","Carlo Maria Giulini / Vienna Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Richard Strauss","work":"Also sprach Zarathustra, Op. 30","duration":"Complete, ~35 min","owned":true,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Fritz Reiner / Chicago Symphony Orchestra","Georg Solti / Chicago Symphony Orchestra"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Richard Strauss","work":"Four Last Songs, Op. posth.","duration":"Complete, ~25 min","owned":false,"best":"Elisabeth Schwarzkopf (soprano) / George Szell / Berlin Radio Symphony","alts":["Jessye Norman (soprano) / Kurt Masur / Leipzig Gewandhaus","Renée Fleming (soprano) / Christian Thielemann / Munich Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 2 in C Minor \"Resurrection\"","duration":"Complete, ~80 min","owned":false,"best":"Otto Klemperer / Philharmonia Orchestra","alts":["Leonard Bernstein / New York Philharmonic","Claudio Abbado / Vienna Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Anton Bruckner","work":"Symphony No. 7 in E Major, WAB 107","duration":"Complete, ~65 min","owned":false,"best":"Eugen Jochum / Berlin Philharmonic","alts":["Herbert von Karajan / Vienna Philharmonic","Günter Wand / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Richard Strauss","work":"Don Quixote, Op. 35","duration":"Complete, ~45 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic / Antonio Janigro (cello)","alts":["Fritz Reiner / Chicago Symphony / János Starker (cello)","Rudolf Kempe / Dresden Staatskapelle"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Das Lied von der Erde","duration":"Complete, ~65 min","owned":false,"best":"Paul Kletzki / Philharmonia Orchestra / Kathleen Ferrier (contralto) / Julius Patzak (tenor)","alts":["Leonard Bernstein / Vienna Philharmonic / Christa Ludwig / Fritz Wunderlich","Bruno Walter / Vienna Philharmonic / Kathleen Ferrier"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 6 in A Minor","duration":"Complete, ~80 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Leonard Bernstein / Vienna Philharmonic","Claudio Abbado / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 1 in D Major \"Titan\"","duration":"Complete, ~55 min","owned":false,"best":"Leonard Bernstein / Vienna Philharmonic","alts":["Georg Solti / Chicago Symphony","Claudio Abbado / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Kindertotenlieder","duration":"Complete, ~25 min","owned":false,"best":"Dietrich Fischer-Dieskau (baritone) / Sir Adrian Boult / London Philharmonic","alts":["Christa Ludwig (mezzo) / Leonard Bernstein / Vienna Philharmonic","Thomas Hampson (baritone) / Riccardo Chailly / Concertgebouw"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Anton Bruckner","work":"Symphony No. 8 in C Minor, WAB 108","duration":"Complete, ~85 min","owned":false,"best":"Herbert von Karajan / Vienna Philharmonic","alts":["Wilhelm Furtwängler / Berlin Philharmonic","Günter Wand / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Richard Strauss","work":"Ein Heldenleben, Op. 40","duration":"Complete, ~45 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Fritz Reiner / Chicago Symphony","Rudolf Kempe / Dresden Staatskapelle"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Richard Strauss","work":"Till Eulenspiegels lustige Streiche, Op. 28","duration":"Complete, ~15 min","owned":false,"best":"Fritz Reiner / Chicago Symphony Orchestra","alts":["Herbert von Karajan / Berlin Philharmonic","Georg Solti / Vienna Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 4 in G Major","duration":"Complete, ~55 min","owned":false,"best":"George Szell / Cleveland Orchestra / Judith Raskin (soprano)","alts":["Leonard Bernstein / New York Philharmonic","Claudio Abbado / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 7 in E Minor","duration":"Complete, ~80 min","owned":false,"best":"Leonard Bernstein / New York Philharmonic","alts":["Claudio Abbado / Berlin Philharmonic","Simon Rattle / City of Birmingham Symphony"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Anton Bruckner","work":"Symphony No. 4 in E-flat Major \"Romantic\", WAB 104","duration":"Complete, ~65 min","owned":false,"best":"Eugen Jochum / Berlin Philharmonic","alts":["Herbert von Karajan / Berlin Philharmonic","Günter Wand / Cologne Radio Symphony"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Richard Strauss","work":"Metamorphosen for 23 Solo Strings","duration":"Complete, ~28 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic Soloists","alts":["Rudolf Kempe / Munich Philharmonic","Rudolf Barshai / Moscow Chamber Orchestra"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Rückert-Lieder","duration":"Complete, ~35 min","owned":false,"best":"Christa Ludwig (mezzo) / Leonard Bernstein / Vienna Philharmonic","alts":["Dietrich Fischer-Dieskau (baritone) / Karl Böhm / Vienna Philharmonic","Thomas Hampson (baritone) / Wolfgang Sawallisch / Vienna Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 8 \"Symphony of a Thousand\"","duration":"Complete, ~80 min","owned":false,"best":"Georg Solti / Chicago Symphony Orchestra","alts":["Klaus Tennstedt / London Philharmonic","Leonard Bernstein / Vienna Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Anton Bruckner","work":"Symphony No. 3 in D Minor, WAB 103","duration":"Complete, ~60 min","owned":false,"best":"Eugen Jochum / Concertgebouw Orchestra","alts":["Herbert von Karajan / Vienna Philharmonic","Günter Wand / Cologne Radio Symphony"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Gustav Mahler","work":"Symphony No. 3 in D Minor","duration":"Complete, ~95 min","owned":false,"best":"Pierre Boulez / Vienna Philharmonic","alts":["Leonard Bernstein / New York Philharmonic","Claudio Abbado / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Richard Strauss","work":"Symphonia Domestica, Op. 53","duration":"Complete, ~45 min","owned":false,"best":"Fritz Reiner / Chicago Symphony Orchestra","alts":["Rudolf Kempe / Dresden Staatskapelle","Karl Böhm / Berlin Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Hugo Wolf","work":"Mörike-Lieder","duration":"Complete, ~2 hrs","owned":false,"best":"Dietrich Fischer-Dieskau (baritone) / Gerald Moore (piano)","alts":["Hermann Prey (baritone) / Karl Engel (piano)","Christian Gerhaher (baritone) / Gerold Huber (piano)"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Hans Pfitzner","work":"Palestrina","duration":"Complete, ~4 hrs","owned":false,"best":"Rafael Kubelík / Bavarian State Opera","alts":["Wolfgang Sawallisch / Bavarian State Opera"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Alexander von Zemlinsky","work":"Die Seejungfrau","duration":"Complete, ~45 min","owned":false,"best":"Riccardo Chailly / Concertgebouw Orchestra","alts":["James Conlon / Cologne Gürzenich Orchestra","Franz Welser-Möst / Vienna Philharmonic"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Max Reger","work":"Variations and Fugue on a Theme by Brahms, Op. 23","duration":"Complete, ~45 min","owned":false,"best":"Sviatoslav Richter (piano)","alts":["Marc-André Hamelin (piano)","Gerhard Oppitz (piano)"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Erich Wolfgang Korngold","work":"Violin Concerto in D Major, Op. 35","duration":"Complete, ~25 min","owned":false,"best":"Gil Shaham (violin) / André Previn / London Symphony Orchestra","alts":["Itzhak Perlman (violin) / Seiji Ozawa / Boston Symphony","Anne-Sophie Mutter (violin) / Seiji Ozawa / Boston Symphony"]},{"era":"LATE ROMANTIC AND POST-ROMANTIC","composer":"Franz Schreker","work":"Chamber Symphony, Op. 17","duration":"Complete, ~25 min","owned":false,"best":"Lothar Zagrosek / London Sinfonietta","alts":["James Conlon / Cologne Gürzenich Orchestra","Michael Gielen / SWR Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Arvo Pärt","work":"Spiegel im Spiegel","duration":"Complete, ~10 min","owned":false,"best":"Vladimir Spivakov (violin) / Sergei Bezrodny (piano)","alts":["Gidon Kremer (violin) / Keith Jarrett (piano)","Dietmar Schwalke (cello) / Alexander Malter (piano)"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Philip Glass","work":"Glassworks","duration":"Complete, ~35 min","owned":true,"best":"Philip Glass Ensemble","alts":["Michael Riesman / Philip Glass Ensemble","Sony Classical recording"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"John Adams","work":"Short Ride in a Fast Machine","duration":"Complete, ~4 min","owned":false,"best":"Simon Rattle / City of Birmingham Symphony Orchestra","alts":["Edo de Waart / San Francisco Symphony","Leonard Slatkin / St. Louis Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Henryk Górecki","work":"Symphony No. 3 \"Symphony of Sorrowful Songs\", Op. 36","duration":"~55 min","owned":false,"best":"David Zinman / London Sinfonietta / Dawn Upshaw (soprano)","alts":["Antoni Wit / Polish National Radio Symphony / Zofia Kilanowicz","Jerzy Katlewicz / National Philharmonic of Poland"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Arvo Pärt","work":"Tabula Rasa","duration":"Complete, ~55 min","owned":false,"best":"Neeme Järvi / Royal Scottish National Orchestra / Gidon Kremer (violin)","alts":["Tõnu Kaljuste / Estonian National Symphony","Manfred Aegle / Stuttgart Chamber Orchestra"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Steve Reich","work":"Music for 18 Musicians","duration":"Complete, ~55 min","owned":false,"best":"Steve Reich and Musicians","alts":["Ensemble Modern","Synergy Vocals / London Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Philip Glass","work":"Violin Concerto No. 1","duration":"Complete, ~30 min","owned":false,"best":"Gidon Kremer (violin) / Dennis Russell Davies / Vienna Philharmonic","alts":["Paul Zukofsky (violin) / Dennis Russell Davies","Robert McDuffie (violin) / Günther Herbig / Berlin Radio Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"John Adams","work":"Nixon in China","duration":"Complete, ~3 hrs","owned":false,"best":"Edo de Waart / Orchestra of St. Luke's","alts":["Kent Nagano / Hallé Orchestra","Kent Nagano / Opéra de Lyon"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Max Richter","work":"Sleep","duration":"Selected movements, ~60 min highlights","owned":false,"best":"Max Richter / Mari Samuelsen (violin) / Konzerthausorchester Berlin","alts":["Australian Chamber Orchestra / ACO","Frankfurt Radio Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Einojuhani Rautavaara","work":"Cantus Arcticus, Op. 61","duration":"Complete, ~20 min","owned":false,"best":"Paavo Berglund / Bournemouth Symphony Orchestra","alts":["Max Pommer / Leipzig Radio Symphony","Hannu Lintu / Finnish Radio Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Steve Reich","work":"Different Trains","duration":"Complete, ~27 min","owned":false,"best":"Kronos Quartet","alts":["Arditti Quartet","Kronos Quartet (second version)"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Philip Glass","work":"Akhnaten","duration":"Complete, ~2.5 hrs","owned":false,"best":"Dennis Russell Davies / Stuttgart State Opera","alts":["John Mauceri / New York City Opera","Klas Torstensson / Gothenburg Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"John Adams","work":"Harmonielehre","duration":"Complete, ~40 min","owned":false,"best":"Kent Nagano / Hallé Orchestra","alts":["Simon Rattle / City of Birmingham Symphony","Esa-Pekka Salonen / Los Angeles Philharmonic"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Arvo Pärt","work":"Passio Domini Nostri Jesu Christi","duration":"Complete, ~70 min","owned":false,"best":"Paul Hillier / Theatre of Voices","alts":["Tõnu Kaljuste / Estonian Philharmonic Chamber Choir","Christopher Bowers-Broadbent (organ)"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Terry Riley","work":"In C","duration":"Complete, ~45 min","owned":false,"best":"Terry Riley and Ensemble (original 1968 recording)","alts":["Bang on a Can All-Stars","Ensemble Modern"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Henryk Górecki","work":"String Quartet No. 3 \"Songs Are Sung\"","duration":"Complete, ~20 min","owned":false,"best":"Kronos Quartet","alts":["Carmina Quartet","Arditti Quartet"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Sofia Gubaidulina","work":"Offertorium for Violin and Orchestra","duration":"Complete, ~35 min","owned":false,"best":"Gidon Kremer (violin) / Claudio Abbado / Boston Symphony","alts":["Hilary Hahn (violin) / Paavo Järvi / Frankfurt Radio Symphony","Anne-Sophie Mutter (violin) / Seiji Ozawa / Berlin Philharmonic"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Galina Ustvolskaya","work":"Symphony No. 5 \"Amen\"","duration":"Complete, ~15 min","owned":false,"best":"Gennady Rozhdestvensky / Moscow Chamber Orchestra","alts":["Vladimir Jurowski / Berlin Radio Symphony","Reinbert de Leeuw / Schönberg Ensemble"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Giya Kancheli","work":"Liturgy for Violin and Orchestra","duration":"Complete, ~40 min","owned":false,"best":"Gidon Kremer (violin) / Claudio Abbado / Berlin Philharmonic","alts":["Andrei Bielov (violin) / Tabita Berglund / Finnish Radio Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Nico Muhly","work":"Mothertongue","duration":"Complete, ~35 min","owned":false,"best":"Nico Muhly / Orchestra of St. Luke's","alts":["Gil Rose / Boston Modern Orchestra Project"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"La Monte Young","work":"The Well-Tuned Piano","duration":"Complete, ~5–6 hrs","owned":false,"best":"La Monte Young (piano, 1981 Gramavision recording)","alts":[]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Morton Feldman","work":"Rothko Chapel","duration":"Complete, ~25 min","owned":false,"best":"Reinbert de Leeuw / Schönberg Ensemble","alts":["Cynthia Millar (ondes martenot) / Philip Jones Ensemble","Paul Hillier / Theatre of Voices"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Giacinto Scelsi","work":"Quattro pezzi su una nota sola","duration":"Complete, ~20 min","owned":false,"best":"Pietro Borgonovo / RAI Orchestra Milan","alts":["Ensemble Recherche","Arditti Quartet"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Helmut Lachenmann","work":"Air for Large Orchestra","duration":"Complete, ~18 min","owned":false,"best":"Lothar Zagrosek / Stuttgart Radio Symphony","alts":["Bruno Maderna / Süddeutscher Rundfunk Symphony","Hans Zender / Frankfurt Radio Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Salvatore Sciarrino","work":"Quintettino No. 1","duration":"Complete, ~8 min","owned":false,"best":"Ensemble Recherche","alts":["Arditti Quartet","Klangforum Wien"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Tristan Murail","work":"Gondwana for Orchestra","duration":"Complete, ~16 min","owned":false,"best":"Peter Eötvös / Ensemble InterContemporain","alts":["Jonathan Nott / Ensemble Modern","Susanna Mälkki / Helsinki Philharmonic"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Georg Friedrich Haas","work":"in vain","duration":"Complete, ~70 min","owned":false,"best":"Sylvain Cambreling / Klangforum Wien","alts":["Johannes Kalitzke / Ensemble Modern","Stefan Asbury / Klangforum Wien"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Wolfgang Rihm","work":"Jagden und Formen","duration":"Complete, ~50 min","owned":false,"best":"David Robertson / Ensemble Intercontemporain","alts":["Pierre-André Valade / Musikfabrik","Heinz Holliger / SWR Symphony"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Brian Ferneyhough","work":"Etudes Transcendantes","duration":"Complete, ~45 min","owned":false,"best":"Jacqueline Brouter (soprano) / Garth Knox / Arditti Quartet","alts":["Ensemble Recherche","Klangforum Wien"]},{"era":"MINIMALISM AND CONTEMPORARY","composer":"Rebecca Saunders","work":"Stirring Still","duration":"Complete, ~30 min","owned":false,"best":"Peter Rundel / Ensemble Recherche","alts":["Marcus Weiss / SWR Experimental Studio","Klangforum Wien"]},{"era":"ROMANTIC","composer":"Frédéric Chopin","work":"Nocturnes","duration":"Complete, ~2 hrs","owned":true,"best":"Arthur Rubinstein (piano)","alts":["Maria João Pires (piano)","Maurizio Pollini (piano)"]},{"era":"ROMANTIC","composer":"Frédéric Chopin","work":"Piano Concerto No. 2 in F Minor, Op. 21","duration":"~30 min","owned":true,"best":"Martha Argerich (piano) / Charles Dutoit / Montreal Symphony Orchestra","alts":["Krystian Zimerman (piano) / Carlo Maria Giulini / Los Angeles Philharmonic","Evgeny Kissin (piano) / Claudio Abbado / Berlin Philharmonic"]},{"era":"ROMANTIC","composer":"Pyotr Ilyich Tchaikovsky","work":"Piano Concerto No. 1 in B-flat Minor, Op. 23","duration":"~35 min","owned":true,"best":"Martha Argerich (piano) / Claudio Abbado / Berlin Philharmonic","alts":["Yuja Wang (piano) / Gustavo Dudamel / Los Angeles Philharmonic","Van Cliburn (piano) / Kirill Kondrashin / RCA Symphony"]},{"era":"ROMANTIC","composer":"Pyotr Ilyich Tchaikovsky","work":"Swan Lake, Op. 20","duration":"Complete, ~2.5 hrs","owned":true,"best":"André Previn / London Symphony Orchestra","alts":["Valery Gergiev / Mariinsky Theatre Orchestra","Semyon Bychkov / Berlin Philharmonic"]},{"era":"ROMANTIC","composer":"Pyotr Ilyich Tchaikovsky","work":"Symphony No. 6 in B Minor \"Pathétique\", Op. 74","duration":"~45 min","owned":true,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Evgeny Mravinsky / Leningrad Philharmonic","Leonard Bernstein / New York Philharmonic"]},{"era":"ROMANTIC","composer":"Johannes Brahms","work":"Symphony No. 1 in C Minor, Op. 68","duration":"~45 min","owned":true,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Carlos Kleiber / Vienna Philharmonic","Leonard Bernstein / Vienna Philharmonic"]},{"era":"ROMANTIC","composer":"Antonín Dvořák","work":"Symphony No. 9 in E Minor \"New World\", Op. 95","duration":"~45 min","owned":true,"best":"Herbert von Karajan / Vienna Philharmonic","alts":["Rafael Kubelík / Berlin Philharmonic","Leonard Bernstein / New York Philharmonic"]},{"era":"ROMANTIC","composer":"Sergei Rachmaninoff","work":"Piano Concerto No. 2 in C Minor, Op. 18","duration":"~35 min","owned":false,"best":"Sergei Rachmaninoff (piano) / Leopold Stokowski / Philadelphia Orchestra","alts":["Yuja Wang (piano) / Gustavo Dudamel / Los Angeles Philharmonic","Krystian Zimerman (piano) / Valery Gergiev / Mariinsky Orchestra"]},{"era":"ROMANTIC","composer":"Frédéric Chopin","work":"Ballades","duration":"Complete, ~40 min","owned":false,"best":"Maurizio Pollini (piano)","alts":["Krystian Zimerman (piano)","Martha Argerich (piano)"]},{"era":"ROMANTIC","composer":"Franz Liszt","work":"Piano Concerto No. 1 in E-flat Major, S. 124","duration":"~20 min","owned":false,"best":"Krystian Zimerman (piano) / Seiji Ozawa / Boston Symphony Orchestra","alts":["Martha Argerich (piano) / Claudio Abbado / London Symphony Orchestra","Lang Lang (piano) / Valery Gergiev / Mariinsky Orchestra"]},{"era":"ROMANTIC","composer":"Frédéric Chopin","work":"Preludes, Op. 28","duration":"Complete, ~40 min","owned":false,"best":"Martha Argerich (piano)","alts":["Maurizio Pollini (piano)","Daniil Trifonov (piano)"]},{"era":"ROMANTIC","composer":"Frédéric Chopin","work":"Waltzes","duration":"Complete, ~1.5 hrs","owned":false,"best":"Daniil Trifonov (piano)","alts":["Arthur Rubinstein (piano)","Murray Perahia (piano)"]},{"era":"ROMANTIC","composer":"Johannes Brahms","work":"Symphony No. 4 in E Minor, Op. 98","duration":"~40 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Carlos Kleiber / Vienna Philharmonic","Leonard Bernstein / Vienna Philharmonic"]},{"era":"ROMANTIC","composer":"Johannes Brahms","work":"Piano Concerto No. 2 in B-flat Major, Op. 83","duration":"~50 min","owned":false,"best":"Emil Gilels (piano) / Eugen Jochum / Berlin Philharmonic","alts":["Krystian Zimerman (piano) / Leonard Bernstein / Vienna Philharmonic","Grigory Sokolov (piano) / Claudio Abbado / Berlin Philharmonic"]},{"era":"ROMANTIC","composer":"Johannes Brahms","work":"Violin Concerto in D Major, Op. 77","duration":"~40 min","owned":false,"best":"Jascha Heifetz (violin) / Fritz Reiner / Chicago Symphony Orchestra","alts":["Anne-Sophie Mutter (violin) / Herbert von Karajan / Berlin Philharmonic","Itzhak Perlman (violin) / Carlo Maria Giulini / Chicago Symphony"]},{"era":"ROMANTIC","composer":"Johannes Brahms","work":"Ein Deutsches Requiem, Op. 45","duration":"~70 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic / Vienna Singverein","alts":["Otto Klemperer / Philharmonia Orchestra","John Eliot Gardiner / Orchestre Révolutionnaire et Romantique"]},{"era":"ROMANTIC","composer":"Sergei Rachmaninoff","work":"Piano Concerto No. 3 in D Minor, Op. 30","duration":"~45 min","owned":false,"best":"Daniil Trifonov (piano) / Yannick Nézet-Séguin / Philadelphia Orchestra","alts":["Martha Argerich (piano) / Claudio Abbado / Berlin Philharmonic","Evgeny Kissin (piano) / Claudio Abbado / Berlin Philharmonic"]},{"era":"ROMANTIC","composer":"Pyotr Ilyich Tchaikovsky","work":"Violin Concerto in D Major, Op. 35","duration":"~35 min","owned":false,"best":"Jascha Heifetz (violin) / Fritz Reiner / Chicago Symphony Orchestra","alts":["Hilary Hahn (violin) / Paavo Järvi / Oslo Philharmonic","Itzhak Perlman (violin) / Eugene Ormandy / Philadelphia Orchestra"]},{"era":"ROMANTIC","composer":"Antonín Dvořák","work":"Cello Concerto in B Minor, Op. 104","duration":"~40 min","owned":false,"best":"Yo-Yo Ma (cello) / Lorin Maazel / Berlin Philharmonic","alts":["Mstislav Rostropovich (cello) / Herbert von Karajan / Berlin Philharmonic","Jacqueline du Pré (cello) / Daniel Barenboim / Chicago Symphony"]},{"era":"ROMANTIC","composer":"Robert Schumann","work":"Piano Concerto in A Minor, Op. 54","duration":"~30 min","owned":false,"best":"Martha Argerich (piano) / Mstislav Rostropovich / National Symphony Orchestra","alts":["Krystian Zimerman (piano) / Leonard Bernstein / Vienna Philharmonic","Murray Perahia (piano) / Colin Davis / Bavarian Radio Symphony"]},{"era":"ROMANTIC","composer":"Frédéric Chopin","work":"Mazurkas","duration":"Complete, ~2.5 hrs","owned":false,"best":"Arthur Rubinstein (piano)","alts":["Maurizio Pollini (piano)","Vladimir Ashkenazy (piano)"]},{"era":"ROMANTIC","composer":"Frédéric Chopin","work":"Études, Op. 10 and Op. 25","duration":"Complete, ~55 min","owned":false,"best":"Maurizio Pollini (piano)","alts":["Martha Argerich (piano)","Vladimir Ashkenazy (piano)"]},{"era":"ROMANTIC","composer":"Robert Schumann","work":"Carnaval, Op. 9","duration":"~30 min","owned":false,"best":"Krystian Zimerman (piano)","alts":["Maurizio Pollini (piano)","Vladimir Horowitz (piano)"]},{"era":"ROMANTIC","composer":"Robert Schumann","work":"Kinderszenen, Op. 15","duration":"~17 min","owned":false,"best":"Sviatoslav Richter (piano)","alts":["Vladimir Horowitz (piano)","András Schiff (piano)"]},{"era":"ROMANTIC","composer":"Johannes Brahms","work":"String Sextets, Op. 18 and Op. 36","duration":"~80 min combined","owned":false,"best":"Academy of St Martin in the Fields Chamber Ensemble","alts":["Berlin Philharmonic Octet","Hausmusik London"]},{"era":"ROMANTIC","composer":"Johannes Brahms","work":"Late Piano Pieces, Op. 116–119","duration":"~70 min combined","owned":false,"best":"Radu Lupu (piano)","alts":["Murray Perahia (piano)","Krystian Zimerman (piano)"]},{"era":"ROMANTIC","composer":"Franz Liszt","work":"Hungarian Rhapsody No. 2 in C-sharp Minor, S. 244","duration":"~10 min","owned":false,"best":"Martha Argerich (piano)","alts":["Jorge Bolet (piano)","Yuja Wang (piano)"]},{"era":"ROMANTIC","composer":"Franz Liszt","work":"Années de pèlerinage","duration":"Complete, 3 books, ~3 hrs","owned":false,"best":"Alfred Brendel (piano)","alts":["Lazar Berman (piano)","Jorge Bolet (piano)"]},{"era":"ROMANTIC","composer":"Sergei Rachmaninoff","work":"Rhapsody on a Theme of Paganini, Op. 43","duration":"~25 min","owned":false,"best":"Yuja Wang (piano) / Gustavo Dudamel / Los Angeles Philharmonic","alts":["Sergei Rachmaninoff (piano) / Leopold Stokowski / Philadelphia Orchestra","Vladimir Ashkenazy (piano) / Bernard Haitink / Concertgebouw Orchestra"]},{"era":"ROMANTIC","composer":"César Franck","work":"Symphony in D Minor","duration":"Complete, ~40 min","owned":false,"best":"Carlo Maria Giulini / Chicago Symphony Orchestra","alts":["Leonard Bernstein / New York Philharmonic","Pierre Monteux / Chicago Symphony Orchestra"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Requiem in D Minor, K. 626","duration":"Complete, ~55 min","owned":true,"best":"Herbert von Karajan / Berlin Philharmonic / Vienna Singverein","alts":["Karl Böhm / Vienna Philharmonic","John Eliot Gardiner / Monteverdi Choir"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Piano Concerto No. 21 in C Major, K. 467","duration":"Complete, ~30 min","owned":true,"best":"Murray Perahia (piano) / English Chamber Orchestra","alts":["Daniel Barenboim (piano) / English Chamber Orchestra","Mitsuko Uchida (piano) / English Chamber Orchestra"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Piano Concerto No. 20 in D Minor, K. 466","duration":"Complete, ~30 min","owned":true,"best":"Friedrich Gulda (piano) / Vienna Philharmonic / Horst Stein","alts":["Murray Perahia (piano) / English Chamber Orchestra","Alfred Brendel (piano) / Academy of St Martin in the Fields"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Symphony No. 40 in G Minor, K. 550","duration":"Complete, ~30 min","owned":false,"best":"Wilhelm Furtwängler / Vienna Philharmonic","alts":["Karl Böhm / Berlin Philharmonic","Nikolaus Harnoncourt / Concentus Musicus Wien"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Symphony No. 41 in C Major \"Jupiter\", K. 551","duration":"Complete, ~35 min","owned":false,"best":"Rafael Kubelík / Bavarian Radio Symphony Orchestra","alts":["Karl Böhm / Berlin Philharmonic","Trevor Pinnock / English Concert"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Eine kleine Nachtmusik, K. 525","duration":"Complete, ~20 min","owned":false,"best":"James Levine / Vienna Philharmonic","alts":["Neville Marriner / Academy of St Martin in the Fields","Orpheus Chamber Orchestra"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Don Giovanni, K. 527","duration":"Complete, ~2.5 hrs","owned":false,"best":"Carlo Maria Giulini / Philharmonia Orchestra","alts":["Teodor Currentzis / MusicAeterna","Karl Böhm / Prague National Theatre Orchestra"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"Symphony No. 94 in G Major \"Surprise\"","duration":"Complete, ~25 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Leonard Bernstein / Vienna Philharmonic","Nikolaus Harnoncourt / Concentus Musicus Wien"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Clarinet Concerto in A Major, K. 622","duration":"Complete, ~30 min","owned":false,"best":"Martin Fröst (clarinet) / Swedish Chamber Orchestra","alts":["Sabine Meyer (clarinet) / Staatskapelle Dresden","Karl Leister (clarinet) / Berlin Philharmonic"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Le nozze di Figaro, K. 492","duration":"Complete, ~3 hrs","owned":false,"best":"Karl Böhm / Berlin Philharmonic","alts":["John Eliot Gardiner / English Baroque Soloists","René Jacobs / Concerto Köln"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Die Zauberflöte, K. 620","duration":"Complete, ~2.5 hrs","owned":false,"best":"Otto Klemperer / Philharmonia Orchestra","alts":["Karl Böhm / Berlin Philharmonic","Simon Rattle / Berlin Philharmonic"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Violin Concerto No. 5 in A Major \"Turkish\", K. 219","duration":"Complete, ~30 min","owned":false,"best":"Hilary Hahn (violin) / Orchestra of St. Luke's / Nicholas McGegan","alts":["Arthur Grumiaux (violin) / London Symphony Orchestra","Anne-Sophie Mutter (violin) / Mozarteum Orchester Salzburg"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Piano Sonata No. 11 in A Major \"Alla Turca\", K. 331","duration":"Complete, ~20 min","owned":false,"best":"Mitsuko Uchida (piano)","alts":["Maria João Pires (piano)","András Schiff (piano)"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"String Quartet in C Major \"Emperor\", Op. 76 No. 3","duration":"Complete, ~30 min","owned":false,"best":"Emerson String Quartet","alts":["Hagen Quartett","Tokyo String Quartet"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"The Creation, Hob. XXI:2","duration":"Complete, ~2 hrs","owned":false,"best":"John Eliot Gardiner / English Baroque Soloists / Monteverdi Choir","alts":["Herbert von Karajan / Berlin Philharmonic","Simon Rattle / Berlin Philharmonic"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"Symphonies No. 100 \"Military\" and No. 101 \"Clock\"","duration":"Complete, ~50 min combined","owned":false,"best":"Leonard Bernstein / Vienna Philharmonic","alts":["Nikolaus Harnoncourt / Concentus Musicus Wien","Herbert von Karajan / Berlin Philharmonic"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"String Quartet No. 19 in C Major \"Dissonance\", K. 465","duration":"Complete, ~30 min","owned":false,"best":"Emerson String Quartet","alts":["Alban Berg Quartett","Hagen Quartett"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Piano Concerto No. 24 in C Minor, K. 491","duration":"Complete, ~30 min","owned":false,"best":"Mitsuko Uchida (piano) / English Chamber Orchestra / Jeffrey Tate","alts":["Alfred Brendel (piano) / Academy of St Martin in the Fields","Murray Perahia (piano) / English Chamber Orchestra"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"Piano Sonata in E-flat Major, Hob. XVI:52","duration":"Complete, ~20 min","owned":false,"best":"Alfred Brendel (piano)","alts":["András Schiff (piano)","Marc-André Hamelin (piano)"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Sinfonia Concertante in E-flat Major, K. 364","duration":"Complete, ~30 min","owned":false,"best":"Itzhak Perlman (violin) / Pinchas Zukerman (viola) / Zubin Mehta / Israel Philharmonic","alts":["Arthur Grumiaux (violin) / Arrigo Pelliccia (viola) / Davis / New Philharmonia","Hilary Hahn (violin) / Yuri Bashmet (viola)"]},{"era":"CLASSICAL ERA","composer":"Carl Philipp Emanuel Bach","work":"Württemberg Sonatas, Wq. 49","duration":"Complete, ~90 min","owned":false,"best":"Miklos Spányi (clavichord)","alts":["Andreas Staier (fortepiano)","Bob van Asperen (harpsichord)"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Idomeneo, K. 366","duration":"Complete, ~3 hrs","owned":false,"best":"John Eliot Gardiner / English Baroque Soloists","alts":["Karl Böhm / Vienna Philharmonic","René Jacobs / Freiburger Barockorchester"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"The Seasons, Hob. XXI:3","duration":"Complete, ~2 hrs","owned":false,"best":"John Eliot Gardiner / English Baroque Soloists / Monteverdi Choir","alts":["Herbert von Karajan / Berlin Philharmonic","Nikolaus Harnoncourt / Arnold Schoenberg Choir"]},{"era":"CLASSICAL ERA","composer":"Muzio Clementi","work":"Piano Sonatas, Op. 25","duration":"Complete, ~60 min","owned":false,"best":"Howard Shelley (piano)","alts":["Pietro Spada (piano)","Vladimir Horowitz (piano, selection)"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Piano Fantasy in C Minor, K. 475","duration":"Complete, ~12 min","owned":false,"best":"Mitsuko Uchida (piano)","alts":["Alfred Brendel (piano)","Maria João Pires (piano)"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"String Quartets Op. 33 \"Russian\"","duration":"Complete, ~2 hrs","owned":false,"best":"Kodály Quartet","alts":["Quatuor Mosaïques","Hagen Quartett"]},{"era":"CLASSICAL ERA","composer":"Luigi Boccherini","work":"String Quintets","duration":"Selection, ~90 min","owned":false,"best":"Jörg-Wolfgang Jahn / Boccherini Ensemble","alts":["Quintetto Boccherini","Academy of St Martin in the Fields Chamber Ensemble"]},{"era":"CLASSICAL ERA","composer":"Wolfgang Amadeus Mozart","work":"Così fan tutte, K. 588","duration":"Complete, ~3 hrs","owned":false,"best":"Karl Böhm / Vienna Philharmonic","alts":["John Eliot Gardiner / English Baroque Soloists","René Jacobs / Concerto Köln"]},{"era":"CLASSICAL ERA","composer":"Franz Joseph Haydn","work":"The Seven Last Words of Christ, Hob. XX:1","duration":"String Quartet version, ~55 min","owned":false,"best":"Quatuor Mosaïques","alts":["Emerson String Quartet","Kodály Quartet"]},{"era":"CLASSICAL ERA","composer":"Christoph Willibald Gluck","work":"Orfeo ed Euridice","duration":"Complete, ~2 hrs","owned":false,"best":"John Eliot Gardiner / Monteverdi Choir / Orchestre Révolutionnaire et Romantique","alts":["William Christie / Les Arts Florissants","Nikolaus Harnoncourt / Concentus Musicus Wienh"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Brandenburg Concertos, BWV 1046–1051","duration":"Complete, ~90 min","owned":true,"best":"Café Zimmermann","alts":["Christopher Hogwood / Academy of Ancient Music","Trevor Pinnock / English Concert"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Goldberg Variations, BWV 988","duration":"Complete, ~80 min","owned":false,"best":"Glenn Gould (piano, 1981 recording)","alts":["Murray Perahia (piano)","András Schiff (piano)"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Cello Suites, BWV 1007–1012","duration":"Complete, ~2.5 hrs","owned":false,"best":"Yo-Yo Ma (cello, 1983 recording)","alts":["Pablo Casals (cello)","Mischa Maisky (cello)"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Mass in B Minor, BWV 232","duration":"Complete, ~2 hrs","owned":true,"best":"John Eliot Gardiner / Monteverdi Choir / English Baroque Soloists","alts":["Philippe Herreweghe / Collegium Vocale Gent","Karl Richter / Munich Bach Orchestra"]},{"era":"BAROQUE","composer":"George Frideric Handel","work":"Messiah, HWV 56","duration":"Complete, ~2.5 hrs","owned":true,"best":"John Eliot Gardiner / Monteverdi Choir / English Baroque Soloists","alts":["Christopher Hogwood / Academy of Ancient Music","Trevor Pinnock / English Concert"]},{"era":"BAROQUE","composer":"Antonio Vivaldi","work":"The Four Seasons, RV 269–297","duration":"Complete, ~40 min","owned":false,"best":"Nigel Kennedy (violin) / English Chamber Orchestra","alts":["Fabio Biondi (violin) / Europa Galante","Anne-Sophie Mutter (violin) / Trondheim Soloists"]},{"era":"BAROQUE","composer":"George Frideric Handel","work":"Water Music, HWV 348–350","duration":"Complete, ~60 min","owned":false,"best":"Christopher Hogwood / Academy of Ancient Music","alts":["Trevor Pinnock / English Concert","William Christie / Les Arts Florissants"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Well-Tempered Clavier Book I, BWV 846–869","duration":"Complete, ~2 hrs","owned":false,"best":"András Schiff (piano)","alts":["Angela Hewitt (piano)","Glenn Gould (piano)"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Toccata and Fugue in D Minor, BWV 565","duration":"Complete, ~9 min","owned":false,"best":"Helmut Walcha (organ)","alts":["Karl Richter (organ)","Marie-Claire Alain (organ)"]},{"era":"BAROQUE","composer":"Antonio Vivaldi","work":"Gloria in D Major, RV 589","duration":"Complete, ~30 min","owned":true,"best":"John Eliot Gardiner / English Baroque Soloists","alts":["Rinaldo Alessandrini / Concerto Italiano","Christopher Hogwood / Academy of Ancient Music"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Orchestral Suites, BWV 1066–1069","duration":"Complete, ~2 hrs","owned":false,"best":"Jean-François Paillard / Paillard Chamber Orchestra","alts":["Christopher Hogwood / Academy of Ancient Music","Trevor Pinnock / English Concert"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Violin Concertos + Double Concerto, BWV 1041–1043","duration":"Complete, ~30 min","owned":false,"best":"Hilary Hahn (violin) / Los Angeles Chamber Orchestra / Jeffrey Kahane","alts":["Isabelle Faust (violin) / Akademie für Alte Musik Berlin","Julia Fischer (violin) / Academy of St Martin in the Fields"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"St. Matthew Passion, BWV 244","duration":"Complete, ~3 hrs","owned":false,"best":"John Eliot Gardiner / Monteverdi Choir / English Baroque Soloists","alts":["Karl Richter / Munich Bach Orchestra","Philippe Herreweghe / Collegium Vocale Gent"]},{"era":"BAROQUE","composer":"George Frideric Handel","work":"Saul, HWV 53","duration":"Complete, ~3 hrs","owned":false,"best":"Paul McCreesh / Gabrieli Consort","alts":["William Christie / Les Arts Florissants","Marc Minkowski / Les Musiciens du Louvre"]},{"era":"BAROQUE","composer":"Henry Purcell","work":"Dido and Aeneas, Z. 626","duration":"Complete, ~55 min","owned":false,"best":"William Christie / Les Arts Florissants","alts":["Christopher Hogwood / Academy of Ancient Music","Trevor Pinnock / English Concert"]},{"era":"BAROQUE","composer":"Antonio Vivaldi","work":"L'Estro Armonico, Op. 3","duration":"Complete, ~95 min","owned":false,"best":"Félix Ayo (violin) / I Musici","alts":["Fabio Biondi / Europa Galante","Andrew Manze / Academy of Ancient Music"]},{"era":"BAROQUE","composer":"Arcangelo Corelli","work":"Concerti Grossi, Op. 6","duration":"Complete, ~2 hrs","owned":false,"best":"Andrew Manze / Academy of Ancient Music","alts":["Trevor Pinnock / English Concert","Fabio Biondi / Europa Galante"]},{"era":"BAROQUE","composer":"George Frideric Handel","work":"Music for the Royal Fireworks, HWV 351","duration":"Complete, ~20 min","owned":false,"best":"Trevor Pinnock / English Concert","alts":["Christopher Hogwood / Academy of Ancient Music","John Eliot Gardiner / English Baroque Soloists"]},{"era":"BAROQUE","composer":"Georg Philipp Telemann","work":"Tafelmusik","duration":"Complete, ~3 hrs","owned":false,"best":"Musica Antiqua Köln / Reinhard Goebel","alts":["Frans Brüggen / Orchestra of the Eighteenth Century","Café Zimmermann"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"Cantata BWV 82 \"Ich habe genug\"","duration":"Complete, ~25 min","owned":false,"best":"Dietrich Fischer-Dieskau (baritone) / Karl Richter / Munich Bach Orchestra","alts":["Peter Kooy (bass) / Philippe Herreweghe","Andreas Scholl (countertenor) / Academy of Ancient Music"]},{"era":"BAROQUE","composer":"Dietrich Buxtehude","work":"Organ Works","duration":"Complete, multiple volumes","owned":false,"best":"Helmut Walcha (organ)","alts":["Marie-Claire Alain (organ)","Harald Vogel (organ)"]},{"era":"BAROQUE","composer":"Heinrich Ignaz Franz Biber","work":"Rosary Sonatas","duration":"Complete, ~2 hrs","owned":false,"best":"Andrew Manze (violin) / Richard Egarr (harpsichord)","alts":["John Holloway (violin)","Reinhard Goebel / Musica Antiqua Köln"]},{"era":"BAROQUE","composer":"Heinrich Schütz","work":"Musikalische Exequien, SWV 279–281","duration":"Complete, ~45 min","owned":false,"best":"Philippe Herreweghe / Collegium Vocale Gent","alts":["Paul McCreesh / Gabrieli Consort","John Eliot Gardiner / Monteverdi Choir"]},{"era":"BAROQUE","composer":"Johann Sebastian Bach","work":"The Art of Fugue, BWV 1080","duration":"Complete, ~70 min","owned":false,"best":"Musica Antiqua Köln / Reinhard Goebel","alts":["Helmut Walcha (organ)","Davitt Moroney (harpsichord)"]},{"era":"BAROQUE","composer":"François Couperin","work":"Pièces de clavecin","duration":"Complete, 4 books","owned":false,"best":"Scott Ross (harpsichord)","alts":["William Christie (harpsichord)","Kenneth Gilbert (harpsichord)"]},{"era":"BAROQUE","composer":"Jean-Philippe Rameau","work":"Les Indes galantes","duration":"Complete, ~3 hrs","owned":false,"best":"William Christie / Les Arts Florissants","alts":["Marc Minkowski / Les Musiciens du Louvre","Christophe Rousset / Les Talens Lyriques"]},{"era":"BAROQUE","composer":"Johann Jakob Froberger","work":"Suites and Toccatas","duration":"Selection, ~90 min","owned":false,"best":"Davitt Moroney (harpsichord)","alts":["Gustav Leonhardt (harpsichord)","Bob van Asperen (harpsichord)"]},{"era":"BAROQUE","composer":"Biagio Marini","work":"Opus 8 Sonatas","duration":"Complete, ~60 min","owned":false,"best":"Andrew Manze / Romanesca","alts":["Musica Fiata Köln","Hespèrion XXI / Jordi Savall"]},{"era":"BAROQUE","composer":"Jan Dismas Zelenka","work":"Trio Sonatas, ZWV 181","duration":"Complete, ~2 hrs","owned":false,"best":"Heinz Holliger / Ensemble","alts":["Musica Antiqua Köln / Reinhard Goebel","Ensemble Baroque de Limoges"]},{"era":"BAROQUE","composer":"Jean-Baptiste Lully","work":"Armide, LWV 71","duration":"Complete, ~2.5 hrs","owned":false,"best":"William Christie / Les Arts Florissants","alts":["Marc Minkowski / Les Musiciens du Louvre","Christophe Rousset / Les Talens Lyriques"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Symphony No. 5 in C Minor, Op. 67","duration":"Complete, ~35 min","owned":true,"best":"Carlos Kleiber / Vienna Philharmonic","alts":["Leonard Bernstein / Vienna Philharmonic","Herbert von Karajan / Berlin Philharmonic"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Symphony No. 9 in D Minor \"Choral\", Op. 125","duration":"Complete, ~70 min","owned":true,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Leonard Bernstein / Vienna Philharmonic","Wilhelm Furtwängler / Bayreuth Festival"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Sonata No. 14 in C-sharp Minor \"Moonlight\", Op. 27 No. 2","duration":"Complete, ~15 min","owned":true,"best":"Wilhelm Kempff (piano)","alts":["Daniel Barenboim (piano)","Emil Gilels (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Concerto No. 5 in E-flat Major \"Emperor\", Op. 73","duration":"Complete, ~40 min","owned":false,"best":"Krystian Zimerman (piano) / Vienna Philharmonic / Leonard Bernstein","alts":["Rudolf Serkin (piano) / Seiji Ozawa / Boston Symphony","Emil Gilels (piano) / Leopold Ludwig / Philharmonia"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Symphony No. 6 in F Major \"Pastoral\", Op. 68","duration":"Complete, ~40 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Otto Klemperer / Philharmonia Orchestra","Bruno Walter / Columbia Symphony"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Sonata No. 23 in F Minor \"Appassionata\", Op. 57","duration":"Complete, ~25 min","owned":false,"best":"Wilhelm Kempff (piano)","alts":["Maurizio Pollini (piano)","Emil Gilels (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Violin Concerto in D Major, Op. 61","duration":"Complete, ~45 min","owned":false,"best":"Anne-Sophie Mutter (violin) / Herbert von Karajan / Berlin Philharmonic","alts":["Jascha Heifetz (violin) / Charles Munch / Boston Symphony","David Oistrakh (violin) / Franz Konwitschny / Staatskapelle Dresden"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Symphony No. 7 in A Major, Op. 92","duration":"Complete, ~40 min","owned":false,"best":"Carlos Kleiber / Vienna Philharmonic","alts":["Herbert von Karajan / Berlin Philharmonic","Claudio Abbado / Berlin Philharmonic"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Sonata No. 8 in C Minor \"Pathétique\", Op. 13","duration":"Complete, ~20 min","owned":false,"best":"Wilhelm Kempff (piano)","alts":["Daniel Barenboim (piano)","Maurizio Pollini (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Symphony No. 3 in E-flat Major \"Eroica\", Op. 55","duration":"Complete, ~50 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Carlos Kleiber / Vienna Philharmonic","Wilhelm Furtwängler / Vienna Philharmonic"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"String Quartet No. 14 in C-sharp Minor, Op. 131","duration":"Complete, ~40 min","owned":false,"best":"Emerson String Quartet","alts":["Alban Berg Quartett","Takács Quartet"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Concerto No. 4 in G Major, Op. 58","duration":"Complete, ~35 min","owned":false,"best":"Wilhelm Kempff (piano) / Ferdinand Leitner / Berlin Philharmonic","alts":["Stephen Kovacevich (piano) / Colin Davis / BBC Symphony","Emil Gilels (piano) / Leopold Ludwig / Philharmonia"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Sonata No. 29 in B-flat Major \"Hammerklavier\", Op. 106","duration":"Complete, ~45 min","owned":false,"best":"Maurizio Pollini (piano)","alts":["Stephen Kovacevich (piano)","Alfred Brendel (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Missa Solemnis in D Major, Op. 123","duration":"Complete, ~80 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic / Vienna Singverein","alts":["Leonard Bernstein / Vienna Philharmonic","Otto Klemperer / Philharmonia"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Triple Concerto in C Major, Op. 56","duration":"Complete, ~35 min","owned":false,"best":"David Oistrakh (violin) / Mstislav Rostropovich (cello) / Sviatoslav Richter (piano) / Herbert von Karajan / Berlin Philharmonic","alts":["Gidon Kremer / Mischa Maisky / Martha Argerich / Mahler Chamber Orchestra","Itzhak Perlman / Yo-Yo Ma / Emanuel Ax / Seiji Ozawa / Berlin Philharmonic"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"String Quartet No. 13 in B-flat Major, Op. 130","duration":"Complete, ~35 min","owned":false,"best":"Emerson String Quartet","alts":["Alban Berg Quartett","Budapest String Quartet"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Fidelio, Op. 72","duration":"Complete, ~2 hrs","owned":false,"best":"Otto Klemperer / Philharmonia Orchestra","alts":["Herbert von Karajan / Berlin Philharmonic","Leonard Bernstein / Vienna Philharmonic"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Cello Sonatas No. 3 Op. 69 and No. 5 Op. 102","duration":"Complete, ~60 min combined","owned":false,"best":"Mstislav Rostropovich (cello) / Sviatoslav Richter (piano)","alts":["Yo-Yo Ma (cello) / Emanuel Ax (piano)","Jacqueline du Pré (cello) / Daniel Barenboim (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Sonata No. 32 in C Minor, Op. 111","duration":"Complete, ~25 min","owned":false,"best":"Maurizio Pollini (piano)","alts":["Alfred Brendel (piano)","Stephen Kovacevich (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Violin Sonata No. 9 in A Major \"Kreutzer\", Op. 47","duration":"Complete, ~40 min","owned":false,"best":"David Oistrakh (violin) / Lev Oborin (piano)","alts":["Itzhak Perlman (violin) / Vladimir Ashkenazy (piano)","Hilary Hahn (violin) / Natalie Zhu (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Diabelli Variations, Op. 120","duration":"Complete, ~50 min","owned":false,"best":"Alfred Brendel (piano)","alts":["Maurizio Pollini (piano)","András Schiff (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"String Quartet No. 15 in A Minor, Op. 132","duration":"Complete, ~40 min","owned":false,"best":"Takács Quartet","alts":["Emerson String Quartet","Alban Berg Quartett"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Six Bagatelles, Op. 126","duration":"Complete, ~15 min","owned":false,"best":"Alfred Brendel (piano)","alts":["Peter Serkin (piano)","András Schiff (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Grosse Fuge in B-flat Major, Op. 133","duration":"Complete, ~17 min","owned":false,"best":"Emerson String Quartet","alts":["Alban Berg Quartett","Budapest String Quartet"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"String Quartet No. 16 in F Major, Op. 135","duration":"Complete, ~25 min","owned":false,"best":"Takács Quartet","alts":["Emerson String Quartet","Alban Berg Quartett"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Symphony No. 2 in D Major, Op. 36","duration":"Complete, ~35 min","owned":false,"best":"Carlos Kleiber / Vienna Philharmonic","alts":["Nikolaus Harnoncourt / Chamber Orchestra of Europe","Christopher Hogwood / Academy of Ancient Music"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Sonata No. 31 in A-flat Major, Op. 110","duration":"Complete, ~20 min","owned":false,"best":"Alfred Brendel (piano)","alts":["Maurizio Pollini (piano)","Wilhelm Kempff (piano)"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Wind Octet in E-flat Major, Op. 103","duration":"Complete, ~18 min","owned":false,"best":"Consortium Classicum","alts":["Academy of St Martin in the Fields Chamber Ensemble","Berlin Philharmonic Wind Ensemble"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"String Trio in C Minor, Op. 9 No. 3","duration":"Complete, ~25 min","owned":false,"best":"Itzhak Perlman (violin) / Pinchas Zukerman (viola) / Jacqueline du Pré (cello)","alts":["Trio Zimmermann","Gidon Kremer / Kim Kashkashian / Yo-Yo Ma"]},{"era":"BEETHOVEN","composer":"Ludwig van Beethoven","work":"Piano Concerto No. 3 in C Minor, Op. 37","duration":"Complete, ~35 min","owned":false,"best":"Martha Argerich (piano) / Claudio Abbado / Mahler Chamber Orchestra","alts":["Rudolf Serkin (piano) / Leonard Bernstein / New York Philharmonic","Murray Perahia (piano) / Bernard Haitink / Concertgebouw Orchestra"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Felix Mendelssohn","work":"Violin Concerto in E Minor, Op. 64","duration":"~30 min","owned":false,"best":"Jascha Heifetz (violin) / Charles Munch / Boston Symphony Orchestra","alts":["Hilary Hahn (violin) / Paavo Järvi / Oslo Philharmonic","Itzhak Perlman (violin) / André Previn / Pittsburgh Symphony"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Felix Mendelssohn","work":"A Midsummer Night's Dream","duration":"Incidental Music, Complete, ~60 min","owned":false,"best":"André Previn / London Symphony Orchestra","alts":["Herbert von Karajan / Berlin Philharmonic","Claudio Abbado / London Symphony Orchestra"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Felix Mendelssohn","work":"String Octet in E-flat Major, Op. 20","duration":"~30 min","owned":false,"best":"Academy of St Martin in the Fields Chamber Ensemble","alts":["Hausmusik London","Berlin Philharmonic Octet"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Felix Mendelssohn","work":"Symphony No. 4 in A Major \"Italian\", Op. 90","duration":"~30 min","owned":false,"best":"Claudio Abbado / London Symphony Orchestra","alts":["Herbert von Karajan / Berlin Philharmonic","Leonard Bernstein / New York Philharmonic"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Hector Berlioz","work":"Symphonie fantastique, Op. 14","duration":"~50 min","owned":false,"best":"Colin Davis / London Symphony Orchestra","alts":["Leonard Bernstein / New York Philharmonic","Charles Munch / Boston Symphony Orchestra"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Hector Berlioz","work":"Requiem (Grande Messe des Morts), Op. 5","duration":"~90 min","owned":false,"best":"Colin Davis / Orchestre Symphonique de Boston","alts":["Charles Munch / Boston Symphony Orchestra","Seiji Ozawa / Berlin Philharmonic"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Felix Mendelssohn","work":"Piano Trios, Op. 49 and Op. 66","duration":"~60 min combined","owned":false,"best":"Beaux Arts Trio","alts":["Florestan Trio","Isaac Stern / Emanuel Ax / Yo-Yo Ma"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Hector Berlioz","work":"Harold en Italie, Op. 16","duration":"~40 min","owned":false,"best":"William Primrose (viola) / Charles Munch / Boston Symphony Orchestra","alts":["Nobuko Imai (viola) / Colin Davis / London Symphony","Tabea Zimmermann (viola) / Colin Davis / London Symphony"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Robert Schumann","work":"Symphonies Nos. 1–4","duration":"Complete, ~2.5 hrs","owned":false,"best":"Wolfgang Sawallisch / Staatskapelle Dresden","alts":["Leonard Bernstein / Vienna Philharmonic","Nikolaus Harnoncourt / Chamber Orchestra of Europe"]},{"era":"MENDELSSOHN, BERLIOZ & CONTEMPORARIES","composer":"Robert Schumann","work":"Dichterliebe, Op. 48","duration":"~25 min","owned":false,"best":"Dietrich Fischer-Dieskau (baritone) / Gerald Moore (piano)","alts":["Ian Bostridge (tenor) / Julius Drake (piano)","Thomas Quasthoff (baritone) / Charles Spencer (piano)"]},{"era":"20TH CENTURY / MODERN","composer":"Igor Stravinsky","work":"The Rite of Spring","duration":"Complete, ~35 min","owned":false,"best":"Pierre Boulez / Cleveland Orchestra","alts":["Valery Gergiev / Mariinsky Theatre Orchestra","Igor Markevitch / Philharmonia Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Igor Stravinsky","work":"The Firebird","duration":"Complete, ~45 min","owned":false,"best":"Valery Gergiev / Mariinsky Theatre Orchestra","alts":["Pierre Boulez / New York Philharmonic","Simon Rattle / City of Birmingham Symphony"]},{"era":"20TH CENTURY / MODERN","composer":"Dmitri Shostakovich","work":"Symphony No. 5 in D Minor, Op. 47","duration":"~45 min","owned":false,"best":"Leonard Bernstein / New York Philharmonic","alts":["Valery Gergiev / Mariinsky Orchestra","Mariss Jansons / Leningrad Philharmonic"]},{"era":"20TH CENTURY / MODERN","composer":"Sergei Prokofiev","work":"Romeo and Juliet, Op. 64","duration":"Complete, ~2 hrs","owned":false,"best":"Valery Gergiev / Mariinsky Theatre Orchestra","alts":["André Previn / London Symphony Orchestra","Lorin Maazel / Cleveland Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"George Gershwin","work":"Rhapsody in Blue","duration":"Complete, ~16 min","owned":false,"best":"Leonard Bernstein (piano and conductor) / New York Philharmonic","alts":["André Previn (piano) / London Symphony Orchestra","George Gershwin (piano, 1924 recording) / Paul Whiteman Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Samuel Barber","work":"Adagio for Strings, Op. 11","duration":"~8 min","owned":false,"best":"Leonard Bernstein / New York Philharmonic","alts":["Leonard Slatkin / St. Louis Symphony Orchestra","Thomas Schippers / New York Philharmonic"]},{"era":"20TH CENTURY / MODERN","composer":"Aaron Copland","work":"Appalachian Spring","duration":"Complete, ~25 min","owned":false,"best":"Leonard Bernstein / New York Philharmonic","alts":["Michael Tilson Thomas / San Francisco Symphony","Aaron Copland / London Symphony Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Sergei Prokofiev","work":"Piano Concerto No. 3 in C Major, Op. 26","duration":"~30 min","owned":false,"best":"Martha Argerich (piano) / Claudio Abbado / Berlin Philharmonic","alts":["Yuja Wang (piano) / Gustavo Dudamel / Los Angeles Philharmonic","Evgeny Kissin (piano) / Claudio Abbado / Berlin Philharmonic"]},{"era":"20TH CENTURY / MODERN","composer":"George Gershwin","work":"An American in Paris","duration":"Complete, ~18 min","owned":false,"best":"Leonard Bernstein / New York Philharmonic","alts":["André Previn / London Symphony Orchestra","Seiji Ozawa / Boston Symphony"]},{"era":"20TH CENTURY / MODERN","composer":"Dmitri Shostakovich","work":"Symphony No. 10 in E Minor, Op. 93","duration":"~55 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Valery Gergiev / Mariinsky Orchestra","Bernard Haitink / Concertgebouw Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Igor Stravinsky","work":"Petrushka","duration":"Complete, ~35 min","owned":false,"best":"Pierre Boulez / Cleveland Orchestra","alts":["Valery Gergiev / Mariinsky Orchestra","Igor Markevitch / Philharmonia Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Béla Bartók","work":"Concerto for Orchestra, Sz. 116","duration":"~35 min","owned":false,"best":"Georg Solti / Chicago Symphony Orchestra","alts":["Fritz Reiner / Chicago Symphony Orchestra","Pierre Boulez / Chicago Symphony"]},{"era":"20TH CENTURY / MODERN","composer":"Béla Bartók","work":"String Quartets","duration":"Complete, ~2.5 hrs","owned":false,"best":"Emerson String Quartet","alts":["Takács Quartet","Végh Quartet"]},{"era":"20TH CENTURY / MODERN","composer":"Sergei Prokofiev","work":"Symphony No. 5 in B-flat Major, Op. 100","duration":"~45 min","owned":false,"best":"Evgeny Mravinsky / Leningrad Philharmonic","alts":["Valery Gergiev / Mariinsky Orchestra","Claudio Abbado / Berlin Philharmonic"]},{"era":"20TH CENTURY / MODERN","composer":"Dmitri Shostakovich","work":"String Quartet No. 8 in C Minor, Op. 110","duration":"~25 min","owned":false,"best":"Emerson String Quartet","alts":["Borodin Quartet","Kronos Quartet"]},{"era":"20TH CENTURY / MODERN","composer":"Aaron Copland","work":"Rodeo","duration":"Complete, ~20 min","owned":false,"best":"Leonard Bernstein / New York Philharmonic","alts":["Leonard Slatkin / St. Louis Symphony Orchestra","Aaron Copland / London Symphony Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Maurice Ravel","work":"La Valse, M. 72","duration":"Complete, ~12 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Pierre Boulez / Cleveland Orchestra","Charles Dutoit / Montréal Symphony Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Richard Strauss","work":"Also sprach Zarathustra, Op. 30","duration":"Complete, ~35 min","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Fritz Reiner / Chicago Symphony Orchestra","Georg Solti / Chicago Symphony Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Jean Sibelius","work":"Symphony No. 2 in D Major, Op. 43","duration":"~45 min","owned":false,"best":"Paavo Berglund / Helsinki Philharmonic","alts":["Osmo Vänskä / Minnesota Orchestra","Leonard Bernstein / Vienna Philharmonic"]},{"era":"20TH CENTURY / MODERN","composer":"Edward Elgar","work":"Enigma Variations, Op. 36","duration":"Complete, ~30 min","owned":false,"best":"Georg Solti / BBC Symphony Orchestra","alts":["Leonard Bernstein / BBC Symphony Orchestra","Andrew Davis / BBC Symphony"]},{"era":"20TH CENTURY / MODERN","composer":"Béla Bartók","work":"Piano Concerto No. 2, Sz. 95","duration":"~30 min","owned":false,"best":"Pierre-Laurent Aimard (piano) / Mariss Jansons / Bavarian Radio Symphony","alts":["Maurizio Pollini (piano) / Claudio Abbado / Berlin Philharmonic","Géza Anda (piano) / Ferenc Fricsay / Berlin Radio Symphony"]},{"era":"20TH CENTURY / MODERN","composer":"Olivier Messiaen","work":"Quartet for the End of Time","duration":"Complete, ~50 min","owned":false,"best":"Tashi Ensemble","alts":["Pierre Boulez / Ensemble InterContemporain","Quatuor pour la fin du temps (original performers reconstruction)"]},{"era":"20TH CENTURY / MODERN","composer":"Anton Webern","work":"Five Pieces for Orchestra, Op. 10","duration":"Complete, ~5 min","owned":false,"best":"Pierre Boulez / BBC Symphony Orchestra","alts":["Herbert von Karajan / Berlin Philharmonic","Claudio Abbado / Vienna Philharmonic"]},{"era":"20TH CENTURY / MODERN","composer":"Arnold Schoenberg","work":"Pierrot lunaire, Op. 21","duration":"Complete, ~40 min","owned":false,"best":"Pierre Boulez / Ensemble InterContemporain / Yvonne Minton","alts":["Michael Gielen / SWR Symphony","Robert Craft / Columbia Chamber Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Alban Berg","work":"Violin Concerto","duration":"Complete, ~27 min","owned":false,"best":"Itzhak Perlman (violin) / Seiji Ozawa / Boston Symphony","alts":["Anne-Sophie Mutter (violin) / James Levine / Chicago Symphony","Gidon Kremer (violin) / Claudio Abbado / Vienna Philharmonic"]},{"era":"20TH CENTURY / MODERN","composer":"György Ligeti","work":"Études for Piano, Books I–III","duration":"Complete, ~75 min","owned":false,"best":"Pierre-Laurent Aimard (piano)","alts":["Fredrik Ullén (piano)","Ligeti Project Vol. 5 / Pierre-Laurent Aimard"]},{"era":"20TH CENTURY / MODERN","composer":"Jean Sibelius","work":"Symphonies Nos. 6 and 7","duration":"Complete, ~45 min combined","owned":false,"best":"Paavo Berglund / Helsinki Philharmonic","alts":["Osmo Vänskä / Minnesota Orchestra","Colin Davis / London Symphony Orchestra"]},{"era":"20TH CENTURY / MODERN","composer":"Witold Lutosławski","work":"Symphony No. 3","duration":"Complete, ~30 min","owned":false,"best":"Witold Lutosławski / BBC Symphony Orchestra","alts":["Esa-Pekka Salonen / Los Angeles Philharmonic","Simon Rattle / City of Birmingham Symphony"]},{"era":"20TH CENTURY / MODERN","composer":"Benjamin Britten","work":"War Requiem, Op. 66","duration":"Complete, ~1.5 hrs","owned":false,"best":"Benjamin Britten / Melos Ensemble / London Symphony Orchestra","alts":["Colin Davis / London Symphony Orchestra","Richard Hickox / City of London Sinfonia"]},{"era":"20TH CENTURY / MODERN","composer":"Arvo Pärt","work":"Tabula Rasa","duration":"Complete, ~60 min","owned":false,"best":"Neeme Järvi / Royal Scottish National Orchestra / Gidon Kremer","alts":["Manfred Aegle / Stuttgart Chamber Orchestra","ECM New Series recording"]},{"era":"OPERA","composer":"Giuseppe Verdi","work":"La Traviata","duration":"Complete, ~2.5 hrs","owned":false,"best":"Carlo Maria Giulini / Orchestra e Coro della Scala / Maria Callas","alts":["Herbert von Karajan / Berlin Philharmonic","James Levine / Metropolitan Opera Orchestra"]},{"era":"OPERA","composer":"Giacomo Puccini","work":"La Bohème","duration":"Complete, ~2 hrs","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic / Mirella Freni","alts":["Thomas Beecham / RCA Victor Orchestra","Riccardo Chailly / Orchestra Sinfonica di Milano"]},{"era":"OPERA","composer":"Giacomo Puccini","work":"Tosca","duration":"Complete, ~2 hrs","owned":false,"best":"Victor de Sabata / Orchestra e Coro della Scala / Maria Callas","alts":["Herbert von Karajan / Vienna Philharmonic / Leontyne Price","Antonio Pappano / Orchestra dell'Accademia Nazionale di Santa Cecilia"]},{"era":"OPERA","composer":"Georges Bizet","work":"Carmen","duration":"Complete, ~2.5 hrs","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Seiji Ozawa / Orchestre National de France","Georg Solti / London Philharmonic Orchestra"]},{"era":"OPERA","composer":"Wolfgang Amadeus Mozart","work":"Don Giovanni, K. 527","duration":"Complete, ~2.5 hrs","owned":false,"best":"Carlo Maria Giulini / Philharmonia Orchestra","alts":["Teodor Currentzis / MusicAeterna","Karl Böhm / Prague National Theatre Orchestra"]},{"era":"OPERA","composer":"Richard Wagner","work":"Die Walküre","duration":"Complete, ~4 hrs","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Georg Solti / Vienna Philharmonic","Wilhelm Furtwängler / La Scala Orchestra"]},{"era":"OPERA","composer":"Wolfgang Amadeus Mozart","work":"Le nozze di Figaro, K. 492","duration":"Complete, ~3 hrs","owned":false,"best":"Karl Böhm / Berlin Philharmonic","alts":["John Eliot Gardiner / English Baroque Soloists","René Jacobs / Concerto Köln"]},{"era":"OPERA","composer":"Giuseppe Verdi","work":"Otello","duration":"Complete, ~2.5 hrs","owned":false,"best":"Herbert von Karajan / Vienna Philharmonic / Jon Vickers","alts":["Georg Solti / Chicago Symphony Orchestra","Tullio Serafin / Rome Opera"]},{"era":"OPERA","composer":"Giacomo Puccini","work":"Madama Butterfly","duration":"Complete, ~2.5 hrs","owned":false,"best":"Herbert von Karajan / Vienna Philharmonic / Mirella Freni","alts":["Tullio Serafin / Orchestra della RAI / Maria Callas","Lorin Maazel / Orchestra dell'Accademia Nazionale di Santa Cecilia"]},{"era":"OPERA","composer":"Wolfgang Amadeus Mozart","work":"Die Zauberflöte, K. 620","duration":"Complete, ~2.5 hrs","owned":false,"best":"Otto Klemperer / Philharmonia Orchestra","alts":["Karl Böhm / Berlin Philharmonic","Simon Rattle / Berlin Philharmonic"]},{"era":"OPERA","composer":"Giuseppe Verdi","work":"Rigoletto","duration":"Complete, ~2 hrs","owned":false,"best":"Carlo Maria Giulini / Orchestra e Coro della Scala","alts":["Riccardo Chailly / Vienna Philharmonic","Georg Solti / Vienna Philharmonic"]},{"era":"OPERA","composer":"Giuseppe Verdi","work":"Aida","duration":"Complete, ~2.5 hrs","owned":false,"best":"Georg Solti / Rome Opera","alts":["Herbert von Karajan / Vienna Philharmonic","Riccardo Muti / Orchestra dell'Accademia Nazionale di Santa Cecilia"]},{"era":"OPERA","composer":"Richard Wagner","work":"Tristan und Isolde","duration":"Complete, ~4.5 hrs","owned":false,"best":"Wilhelm Furtwängler / Philharmonia Orchestra","alts":["Herbert von Karajan / Berlin Philharmonic","Carlos Kleiber / Bayreuth Festival"]},{"era":"OPERA","composer":"Gaetano Donizetti","work":"Lucia di Lammermoor","duration":"Complete, ~2.5 hrs","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic / Maria Callas","alts":["Richard Bonynge / London Symphony Orchestra / Joan Sutherland","Tullio Serafin / Florence May Musical Festival / Maria Callas"]},{"era":"OPERA","composer":"Gioachino Rossini","work":"Il Barbiere di Siviglia","duration":"Complete, ~2.5 hrs","owned":false,"best":"Claudio Abbado / London Symphony Orchestra","alts":["Carlo Maria Giulini / Philharmonia Orchestra","Riccardo Chailly / Bologna Teatro Comunale Orchestra"]},{"era":"OPERA","composer":"Richard Wagner","work":"Parsifal","duration":"Complete, ~5 hrs","owned":false,"best":"Herbert von Karajan / Berlin Philharmonic","alts":["Georg Solti / Vienna Philharmonic","Hans Knappertsbusch / Bayreuth Festival Orchestra"]},{"era":"OPERA","composer":"Richard Strauss","work":"Der Rosenkavalier, Op. 59","duration":"Complete, ~3.5 hrs","owned":false,"best":"Herbert von Karajan / Vienna Philharmonic","alts":["Carlos Kleiber / Bavarian State Opera","Erich Kleiber / Vienna Philharmonic"]},{"era":"OPERA","composer":"Vincenzo Bellini","work":"Norma","duration":"Complete, ~2.5 hrs","owned":false,"best":"Tullio Serafin / Orchestra e Coro della Scala / Maria Callas","alts":["Richard Bonynge / London Symphony Orchestra / Joan Sutherland","Carlo Maria Giulini / Florence May Musical Festival"]},{"era":"OPERA","composer":"Christoph Willibald Gluck","work":"Orfeo ed Euridice","duration":"Complete, ~2 hrs","owned":false,"best":"John Eliot Gardiner / Monteverdi Choir / Orchestre Révolutionnaire et Romantique","alts":["William Christie / Les Arts Florissants","Nikolaus Harnoncourt / Concentus Musicus Wien"]},{"era":"OPERA","composer":"Richard Strauss","work":"Salome, Op. 54","duration":"Complete, ~1.5 hrs","owned":false,"best":"Georg Solti / Vienna Philharmonic","alts":["Karl Böhm / Staatskapelle Dresden","Herbert von Karajan / Vienna Philharmonic"]},{"era":"OPERA","composer":"Leoš Janáček","work":"Jenůfa","duration":"Complete, ~2.5 hrs","owned":false,"best":"Charles Mackerras / Vienna Philharmonic","alts":["Jiří Bělohlávek / Czech Philharmonic","Seiji Ozawa / Vienna Philharmonic"]},{"era":"OPERA","composer":"Claudio Monteverdi","work":"L'Orfeo","duration":"Complete, ~2 hrs","owned":false,"best":"John Eliot Gardiner / Monteverdi Choir / English Baroque Soloists","alts":["Nikolaus Harnoncourt / Concentus Musicus Wien","William Christie / Les Arts Florissants"]},{"era":"OPERA","composer":"Alban Berg","work":"Wozzeck, Op. 7","duration":"Complete, ~1.5 hrs","owned":false,"best":"Karl Böhm / Vienna Philharmonic","alts":["Christoph von Dohnányi / Vienna Philharmonic","Pierre Boulez / Paris Opera"]},{"era":"OPERA","composer":"Benjamin Britten","work":"Peter Grimes, Op. 33","duration":"Complete, ~2.5 hrs","owned":false,"best":"Colin Davis / Royal Opera House Orchestra","alts":["Benjamin Britten / English Chamber Orchestra","Bernard Haitink / Royal Opera House Orchestra"]},{"era":"OPERA","composer":"George Frideric Handel","work":"Giulio Cesare, HWV 17","duration":"Complete, ~4 hrs","owned":false,"best":"William Christie / Les Arts Florissants","alts":["Marc Minkowski / Les Musiciens du Louvre","René Jacobs / Concerto Köln"]},{"era":"OPERA","composer":"Jean-Philippe Rameau","work":"Hippolyte et Aricie","duration":"Complete, ~3 hrs","owned":false,"best":"William Christie / Les Arts Florissants","alts":["Marc Minkowski / Les Musiciens du Louvre","Christophe Rousset / Les Talens Lyriques"]},{"era":"OPERA","composer":"Modest Mussorgsky","work":"Boris Godunov","duration":"Complete, ~3.5 hrs","owned":false,"best":"Herbert von Karajan / Vienna Philharmonic","alts":["Claudio Abbado / Vienna Philharmonic","Valery Gergiev / Mariinsky Theatre Orchestra"]},{"era":"OPERA","composer":"Richard Strauss","work":"Elektra, Op. 58","duration":"Complete, ~1.5 hrs","owned":false,"best":"Karl Böhm / Staatskapelle Dresden","alts":["Georg Solti / Vienna Philharmonic","Christoph von Dohnányi / Vienna Philharmonic"]},{"era":"OPERA","composer":"Benjamin Britten","work":"The Turn of the Screw, Op. 54","duration":"Complete, ~1.5 hrs","owned":false,"best":"Benjamin Britten / English Opera Group Orchestra","alts":["Colin Davis / London Symphony Orchestra","Steuart Bedford / English Chamber Orchestra"]},{"era":"OPERA","composer":"Leoš Janáček","work":"The Cunning Little Vixen","duration":"Complete, ~2 hrs","owned":false,"best":"Charles Mackerras / Vienna Philharmonic","alts":["Jiří Bělohlávek / Czech Philharmonic","Simon Rattle / City of Birmingham Symphony"]}]
+
+</script>
+<script>
+(function(){
+"use strict";
+const RAW = JSON.parse(document.getElementById('data').textContent);
+const KEY = 'hall_marks_v1';
+let marks = {};
+try{ marks = JSON.parse(localStorage.getItem(KEY) || '{}'); }catch(e){ marks = {}; }
+
+function idOf(w,i){ return w.era+'::'+w.composer+'::'+w.work+'::'+i; }
+
+const works = RAW.map((w,i)=>{
+  const id = idOf(w,i);
+  const mark = marks[id] || {};
+  return Object.assign({id, idx:i}, w, {
+    owned: (mark.owned !== undefined) ? mark.owned : w.owned,
+    rating: mark.rating || 0,
+    notes: mark.notes || ''
+  });
+});
+
+function saveMark(id, patch){
+  marks[id] = Object.assign({}, marks[id]||{}, patch);
+  try{ localStorage.setItem(KEY, JSON.stringify(marks)); }catch(e){}
+}
+
+const eraOrder = [];
+works.forEach(w=>{ if(!eraOrder.includes(w.era)) eraOrder.push(w.era); });
+
+const eraSel = document.getElementById('eraSel');
+eraSel.innerHTML = '<option value="">All sections</option>' + eraOrder.map(e=>`<option value="${e}">${e}</option>`).join('');
+
+const q = document.getElementById('q');
+const sortSel = document.getElementById('sortSel');
+const statusBtns = document.querySelectorAll('#statusFilter button');
+let statusFilter = 'all';
+
+statusBtns.forEach(b=>b.addEventListener('click',()=>{
+  statusBtns.forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); statusFilter = b.dataset.v; render();
+}));
+q.addEventListener('input', render);
+eraSel.addEventListener('change', render);
+sortSel.addEventListener('change', render);
+
+function searchLink(service, w){
+  const term = encodeURIComponent(w.composer + ' ' + w.work.split(',')[0]);
+  if(service==='apple') return `https://music.apple.com/search?term=${term}`;
+  if(service==='spotify') return `https://open.spotify.com/search/${term}`;
+  if(service==='yt') return `https://www.youtube.com/results?search_query=${term}`;
+}
+
+function starsHtml(w){
+  let h='<div class="stars" data-id="'+w.id+'">';
+  for(let i=1;i<=5;i++) h += `<span data-n="${i}" class="${i<=w.rating?'on':''}">★</span>`;
+  h += '</div>';
+  return h;
+}
+
+function rowHtml(w){
+  const statusClass = w.owned ? 'owned':'wanted';
+  return `
+  <div class="work-row ${statusClass}" data-id="${w.id}">
+    <div class="seal ${w.owned?'on':''}" data-id="${w.id}" title="${w.owned?'In the collection':'Not yet in the collection'}">${w.owned?'✓':'○'}</div>
+    <div class="w-main">
+      <div class="composer">${w.composer||'—'}</div>
+      <div class="title">${w.work}</div>
+      <div class="dur">${w.duration||''} · ${w.era}</div>
+      ${w.best?`<div class="best"><b>Best:</b> ${w.best}</div>`:''}
+      ${w.alts&&w.alts.length?`<div class="alts">Alt: ${w.alts.join('; ')}</div>`:''}
+      ${starsHtml(w)}
+      <textarea class="notes" data-id="${w.id}" placeholder="Notes…">${w.notes}</textarea>
+      <div class="links">
+        <a href="${searchLink('apple',w)}" target="_blank" rel="noopener">Apple Music</a>
+        <a href="${searchLink('spotify',w)}" target="_blank" rel="noopener">Spotify</a>
+        <a href="${searchLink('yt',w)}" target="_blank" rel="noopener">YouTube</a>
       </div>
     </div>
-    <div class="modal-actions" style="margin-bottom:14px;">
-      <button class="modal-btn" id="addProviderBtn" type="button">Save as fallback provider</button>
-    </div>
-    <div id="providerList" style="margin-bottom:10px;"></div>
+    <div class="w-right chrome" style="font-size:10px;color:var(--ink-dim);">${w.owned?'Seated':'Waiting list'}</div>
+  </div>`;
+}
 
-    <div class="modal-section-title">Streaming deep links (optional)</div>
-    <label class="modal-field">
-      <span>Spotify access token</span>
-      <input type="password" id="spotifyTokenInput" placeholder="paste a token from developer.spotify.com" autocomplete="off">
-    </label>
-    <label class="modal-field">
-      <span>YouTube Data API key</span>
-      <input type="password" id="youtubeKeyInput" placeholder="restrict to YouTube Data API v3" autocomplete="off">
-    </label>
-
-    <div class="modal-status" id="settingsStatus"></div>
-    <div class="modal-actions">
-      <button class="modal-btn primary" id="settingsSave">Save</button>
-      <button class="modal-btn" id="settingsClear">Clear all keys</button>
-    </div>
-  </div>
-</div>
-
-<script>
-const MANIFEST_CANDIDATES = ['./classical.md', './albums.md', './album-list.md', './music.md', './ledger.md', './repertoire.md'];
-const KEY_CACHE = 'cc_cache_v2';
-const KEY_MANIFEST_PATH = 'cc_manifest_path_v2';
-const KEY_AI_KEY = 'cc_ai_key_v2';
-const KEY_AI_BASE = 'cc_ai_base_v2';
-const KEY_AI_MODEL = 'cc_ai_model_v2';
-const KEY_AI_PROVIDERS = 'cc_ai_providers_v2';
-const KEY_ARTWORK_CACHE = 'cc_artwork_cache_v2';
-const KEY_AI_DESC_CACHE = 'cc_ai_desc_cache_v2';
-const KEY_SPOTIFY_TOKEN = 'cc_spotify_token_v1';
-const KEY_YOUTUBE_KEY = 'cc_youtube_key_v1';
-
-const state = {
-  works: [],
-  statusFilter: 'all',
-  eraFilter: 'all',
-  query: '',
-  openIds: new Set(),
-  artwork: lsGet(KEY_ARTWORK_CACHE, {}),
-  aiDescriptions: lsGet(KEY_AI_DESC_CACHE, {}), // `${work.id}::${model}` -> { text, ts }
-  artworkInFlight: new Set(),
-  aiInFlight: new Set(),
-};
-
-const els = {
-  counterPill: document.getElementById('counterPill'),
-  reloadBtn: document.getElementById('reloadBtn'),
-  settingsBtn: document.getElementById('settingsBtn'),
-  searchInput: document.getElementById('searchInput'),
-  statusChips: document.getElementById('statusChips'),
-  eraChips: document.getElementById('eraChips'),
-  banner: document.getElementById('banner'),
-  skeleton: document.getElementById('skeleton'),
-  list: document.getElementById('list'),
-  settingsModal: document.getElementById('settingsModal'),
-};
-
-function lsGet(key, fallback) { try { const raw = localStorage.getItem(key); return raw === null ? fallback : JSON.parse(raw); } catch { return fallback; } }
-function lsSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
-function slugify(s) { return String(s).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
-function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
-
-// ---- manifest parsing ----
-function parseManifest(raw) {
-  raw = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  raw = raw.replace(/[\ue000-\uf8ff]/g, ''); // stray PUA bullet glyphs from source icon fonts
-  const lines = raw.split('\n');
-  const works = [];
-  let currentEra = { name: 'Uncategorized', id: 'uncategorized' };
-  let pending = null;
-  const flush = () => { if (pending) { works.push(pending); pending = null; } };
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-    const checkedMatch = line.match(/^-\s*\[x\]\s*(.+)$/i);
-    const uncheckedMatch = line.match(/^-\s*\[\s\]\s*(.+)$/);
-    const bestMatch = line.match(/^Best:\s*(.+)$/i);
-    const altMatch = line.match(/^Alt:\s*(.+)$/i);
-    const bareWorkMatch = !checkedMatch && !uncheckedMatch && !bestMatch && !altMatch
-      ? line.match(/^([^–—-]+(?:–|—)[^(]+\(.+\))$/) : null;
-    const looksLikeHeader = !checkedMatch && !uncheckedMatch && !bestMatch && !altMatch && !bareWorkMatch
-      && /^[A-Za-z0-9 ,.'’()\u2013\u2014-]+$/.test(line)
-      && (line === line.toUpperCase() || /\(\d{4}/.test(line));
-
-    if (looksLikeHeader) {
-      flush();
-      currentEra = { name: line.replace(/\s+/g, ' ').trim(), id: slugify(line) || 'era-' + works.length };
-      continue;
+function render(){
+  const term = q.value.trim().toLowerCase();
+  const era = eraSel.value;
+  let list = works.filter(w=>{
+    if(statusFilter==='owned' && !w.owned) return false;
+    if(statusFilter==='wanted' && w.owned) return false;
+    if(era && w.era!==era) return false;
+    if(term){
+      const hay = (w.composer+' '+w.work+' '+w.best+' '+(w.alts||[]).join(' ')).toLowerCase();
+      if(!hay.includes(term)) return false;
     }
-    if (checkedMatch || uncheckedMatch || bareWorkMatch) {
-      flush();
-      const body = (checkedMatch || uncheckedMatch || bareWorkMatch)[1].trim();
-      const status = checkedMatch ? 'owned' : 'wanted';
-      const dashSplit = body.split(/\s+[–—]\s+/);
-      const composer = dashSplit.length >= 2 ? dashSplit[0].trim() : 'Unknown composer';
-      let rest = dashSplit.length >= 2 ? dashSplit.slice(1).join(' \u2013 ').trim() : body;
-      let durationLabel = null;
-      const durMatch = rest.match(/\(([^()]*?(?:min|hr|hrs)[^()]*)\)\s*$/i);
-      let work = rest;
-      if (durMatch) { durationLabel = durMatch[1].trim(); work = rest.slice(0, durMatch.index).trim(); }
-      pending = { id: slugify(currentEra.id + '-' + composer + '-' + work) || 'work-' + works.length, era: currentEra.name, eraId: currentEra.id, composer, work, durationLabel, status, recordings: [] };
-      continue;
-    }
-    if (bestMatch && pending) { pending.recordings.push({ tag: 'Best', text: bestMatch[1].trim() }); continue; }
-    if (altMatch && pending) { const parts = altMatch[1].split(';').map(s => s.trim()).filter(Boolean); for (const p of parts) pending.recordings.push({ tag: 'Alt', text: p }); continue; }
-  }
-  flush();
-  return works;
-}
-
-// ---- manifest discovery & fetch ----
-async function fetchText(url) {
-  if (location.protocol === 'file:') throw new Error('file-protocol');
-  const busted = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-  const r = await fetch(busted, { cache: 'no-store' });
-  if (!r.ok) throw new Error('http-' + r.status);
-  return await r.text();
-}
-
-async function discoverManifest(forcePath) {
-  const override = forcePath !== undefined ? forcePath : lsGet(KEY_MANIFEST_PATH, '');
-  const candidates = override ? [override] : MANIFEST_CANDIDATES;
-  let lastErr = new Error('no-manifest-found');
-  for (const path of candidates) {
-    try {
-      const text = await fetchText(path);
-      const works = parseManifest(text);
-      if (works.length) {
-        if (!override) lsSet(KEY_MANIFEST_PATH, path);
-        return { works, path };
-      }
-      lastErr = new Error('empty-manifest-at-' + path);
-    } catch (err) { lastErr = err; }
-  }
-  throw lastErr;
-}
-
-async function loadManifest(forcePath) {
-  try {
-    const { works, path } = await discoverManifest(forcePath);
-    lsSet(KEY_CACHE, { works, ts: Date.now(), path });
-    return { works, stale: false, path };
-  } catch (err) {
-    const cached = lsGet(KEY_CACHE, null);
-    if (cached && cached.works && cached.works.length) return { works: cached.works, stale: true, error: err, path: cached.path };
-    throw err;
-  }
-}
-
-// ---- iTunes Search API: artwork + real Apple Music deep link. Keyless, public,
-// safe client-side. Rate-limited (~20 req/min/IP) so lookups are lazy (on card
-// expand) and cached indefinitely — classical album metadata doesn't change. ----
-const ITUNES_LOOKUP_TIMEOUT_MS = 8000;
-async function lookupArtwork(work) {
-  if (state.artwork[work.id]) return state.artwork[work.id];
-  if (state.artworkInFlight.has(work.id)) return null;
-  state.artworkInFlight.add(work.id);
-  try {
-    const term = encodeURIComponent(`${work.composer} ${work.work}`);
-    const url = `https://itunes.apple.com/search?term=${term}&entity=album&limit=3`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), ITUNES_LOOKUP_TIMEOUT_MS);
-    let data;
-    try {
-      const r = await fetch(url, { signal: controller.signal });
-      if (!r.ok) throw new Error('itunes-http-' + r.status);
-      data = await r.json();
-    } finally { clearTimeout(timeout); }
-    const best = (data.results || [])[0];
-    const result = best ? {
-      artworkUrl: best.artworkUrl100 ? best.artworkUrl100.replace('100x100bb', '600x600bb') : null,
-      appleMusicUrl: best.collectionViewUrl || null,
-      collectionName: best.collectionName || null,
-      artistName: best.artistName || null,
-    } : 'notfound';
-    state.artwork[work.id] = result;
-    lsSet(KEY_ARTWORK_CACHE, state.artwork);
-    return result;
-  } catch (err) {
-    return null; // network/timeout: don't cache a negative, let a later retry succeed
-  } finally { state.artworkInFlight.delete(work.id); }
-}
-
-// ---- Spotify / YouTube Music: real deep links only when the person supplies
-// their own token/key (see header note on why no client-secret flow exists
-// here). Otherwise a clearly-labeled search link. ----
-function spotifySearchUrl(work) { return 'https://open.spotify.com/search/' + encodeURIComponent(`${work.composer} ${work.work}`); }
-function youtubeMusicSearchUrl(work) { return 'https://music.youtube.com/search?q=' + encodeURIComponent(`${work.composer} ${work.work}`); }
-
-async function lookupSpotifyAlbum(work) {
-  const token = lsGet(KEY_SPOTIFY_TOKEN, '');
-  if (!token) return null;
-  try {
-    const q = encodeURIComponent(`album:${work.work} artist:${work.composer}`);
-    const r = await fetch(`https://api.spotify.com/v1/search?type=album&limit=1&q=${q}`, { headers: { Authorization: 'Bearer ' + token } });
-    if (!r.ok) return null; // expired/invalid token: fall back silently to search link
-    const data = await r.json();
-    const item = data.albums?.items?.[0];
-    return item ? item.external_urls?.spotify || null : null;
-  } catch { return null; }
-}
-
-async function lookupYoutubeVideo(work) {
-  const key = lsGet(KEY_YOUTUBE_KEY, '');
-  if (!key) return null;
-  try {
-    const q = encodeURIComponent(`${work.composer} ${work.work} full album`);
-    const r = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${q}&key=${key}`);
-    if (!r.ok) return null;
-    const data = await r.json();
-    const id = data.items?.[0]?.id?.videoId;
-    return id ? { url: 'https://music.youtube.com/watch?v=' + id, exact: false } : null; // best-match video, not a verified album match
-  } catch { return null; }
-}
-
-// ---- AI description: OpenAI-compatible chat API, multiple provider profiles
-// tried in order so one rate-limited/dead provider doesn't block a result. ----
-const DEFAULT_AI_BASE = 'https://openrouter.ai/api/v1';
-const AI_FETCH_TIMEOUT_MS = 30000;
-
-function getActiveAiProfile() { return { key: lsGet(KEY_AI_KEY, ''), base: lsGet(KEY_AI_BASE, DEFAULT_AI_BASE) || DEFAULT_AI_BASE, model: lsGet(KEY_AI_MODEL, '') }; }
-function getFallbackProviders() { return lsGet(KEY_AI_PROVIDERS, []); }
-function allAiProfiles() {
-  const active = getActiveAiProfile();
-  const list = active.key && active.model ? [active] : [];
-  return list.concat(getFallbackProviders().filter(p => p.key && p.model));
-}
-
-async function fetchAvailableModels(base, key) {
-  if (!key) throw new Error('no-key');
-  const r = await fetch(base.replace(/\/$/, '') + '/models', { headers: { Authorization: 'Bearer ' + key } });
-  if (!r.ok) throw new Error('models-http-' + r.status);
-  const data = await r.json();
-  const list = data.data || data.models || [];
-  return list.map(m => ({ id: m.id || m.name, free: /:free$/.test(m.id || '') || m.pricing?.prompt === '0' }))
-    .filter(m => m.id).sort((a, b) => (b.free - a.free) || a.id.localeCompare(b.id));
-}
-
-async function callAiProfile(profile, work) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), AI_FETCH_TIMEOUT_MS);
-  try {
-    const system = 'You write brief factual program notes for a classical music archive. '
-      + 'Two to four sentences covering composition date/context, historical or musical '
-      + 'significance, and one specific concrete fact (premiere, dedication, structure, '
-      + 'reception). State only facts you are confident of; omit rather than guess. '
-      + 'No marketing language, no superlatives like "masterpiece" or "timeless", no filler.';
-    const user = `Composer: ${work.composer}\nWork: ${work.work}`;
-    const r = await fetch(profile.base.replace(/\/$/, '') + '/chat/completions', {
-      method: 'POST', signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + profile.key },
-      body: JSON.stringify({ model: profile.model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0.3, max_tokens: 260 }),
-    });
-    if (!r.ok) { const body = await r.text().catch(() => ''); throw new Error('ai-http-' + r.status + (body ? ': ' + body.slice(0, 200) : '')); }
-    const data = await r.json();
-    const text = data.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error('ai-empty-response');
-    return text;
-  } finally { clearTimeout(timeout); }
-}
-
-async function generateAiDescription(work) {
-  const profiles = allAiProfiles();
-  if (!profiles.length) throw new Error('no-key');
-  let lastErr;
-  for (const profile of profiles) {
-    try { return { text: await callAiProfile(profile, work), model: profile.model }; }
-    catch (err) { lastErr = err; }
-  }
-  throw lastErr || new Error('ai-all-providers-failed');
-}
-
-function describeError(err) {
-  const msg = String(err && err.message || err);
-  if (msg === 'file-protocol') return 'This page was opened from disk and cannot reach the ledger. Serve the folder over HTTP (e.g. python3 -m http.server) and open the localhost address instead.';
-  if (msg.startsWith('http-')) return `No ledger markdown file was found among the usual names (${MANIFEST_CANDIDATES.join(', ')}). Set the path in Settings or add one of these files.`;
-  if (msg === 'no-manifest-found') return `No ledger markdown file was found among the usual names (${MANIFEST_CANDIDATES.join(', ')}). Set the path in Settings or add one of these files.`;
-  return 'The ledger could not be read: ' + msg;
-}
-function describeAiError(err) {
-  const msg = String(err && err.message || err);
-  if (msg === 'no-key') return 'No API key is set. Open settings to add one.';
-  if (msg.startsWith('ai-http-401') || msg.startsWith('ai-http-403')) return 'The key was refused by the provider. Check it in settings.';
-  if (msg.startsWith('ai-http-429')) return 'The provider is rate-limiting this key. Wait a moment and try again.';
-  if (msg.startsWith('ai-http-')) return 'The provider returned an error: ' + msg.replace('ai-http-', 'status ');
-  if (msg === 'ai-empty-response') return 'The model returned no text.';
-  if (err && err.name === 'AbortError') return 'The request timed out.';
-  return 'The counsel could not be reached: ' + msg;
-}
-
-function showBanner(msg, isError) {
-  if (!msg) { els.banner.innerHTML = ''; return; }
-  els.banner.innerHTML = `<div class="state-banner${isError ? ' error' : ''}">${escapeHtml(msg)}<button id="bannerRetry">Try again</button></div>`;
-  document.getElementById('bannerRetry').onclick = refresh;
-}
-
-function renderSkeleton() {
-  let html = '';
-  for (let s = 0; s < 2; s++) {
-    html += '<div class="skeleton-section"><div class="skeleton-head"></div>';
-    for (let i = 0; i < 3; i++) html += '<div class="skeleton-row" style="animation-delay:' + (i * 60) + 'ms"></div>';
-    html += '</div>';
-  }
-  els.skeleton.innerHTML = html;
-}
-function clearSkeleton() { els.skeleton.innerHTML = ''; }
-
-function eraOrder() {
-  const seen = []; const set = new Set();
-  for (const w of state.works) if (!set.has(w.eraId)) { set.add(w.eraId); seen.push({ id: w.eraId, name: w.era }); }
-  return seen;
-}
-function updateCounter() { const owned = state.works.filter(w => w.status === 'owned').length; els.counterPill.innerHTML = `<b>${owned}</b> of ${state.works.length} sealed`; }
-
-function renderStatusChips() {
-  const owned = state.works.filter(w => w.status === 'owned').length;
-  const wanted = state.works.length - owned;
-  els.statusChips.innerHTML = [
-    chip('All Entries', state.works.length, 'all'),
-    chip('Sealed', owned, 'owned', 'status-owned'),
-    chip('Sought', wanted, 'wanted', 'status-wanted'),
-  ].join('');
-  els.statusChips.querySelectorAll('.chip').forEach(btn => { btn.onclick = () => { state.statusFilter = btn.dataset.val; render(); }; });
-}
-function chip(label, count, val, extraClass) {
-  const active = state.statusFilter === val;
-  return `<button class="chip ${extraClass || ''} ${active ? 'active' : ''}" data-val="${val}">${escapeHtml(label)} <span class="count">${count}</span></button>`;
-}
-function renderEraChips() {
-  const eras = eraOrder();
-  const allBtn = `<button class="chip ${state.eraFilter === 'all' ? 'active' : ''}" data-era="all">All Eras</button>`;
-  const rest = eras.map(e => {
-    const count = state.works.filter(w => w.eraId === e.id).length;
-    return `<button class="chip ${state.eraFilter === e.id ? 'active' : ''}" data-era="${e.id}">${escapeHtml(e.name)} <span class="count">${count}</span></button>`;
-  }).join('');
-  els.eraChips.innerHTML = allBtn + rest;
-  els.eraChips.querySelectorAll('.chip').forEach(btn => { btn.onclick = () => { state.eraFilter = btn.dataset.era; render(); }; });
-}
-
-function filteredWorks() {
-  const q = state.query.trim().toLowerCase();
-  return state.works.filter(w => {
-    if (state.statusFilter !== 'all' && w.status !== state.statusFilter) return false;
-    if (state.eraFilter !== 'all' && w.eraId !== state.eraFilter) return false;
-    if (q && !(w.composer.toLowerCase().includes(q) || w.work.toLowerCase().includes(q))) return false;
     return true;
   });
-}
 
-function render() {
-  updateCounter();
-  const works = filteredWorks();
-  if (!state.works.length) {
-    els.list.innerHTML = `<div class="empty-state"><svg class="empty-illustration" viewBox="0 0 74 20" fill="none" stroke="var(--gilt)" stroke-width="1.4" stroke-linecap="round"><use href="#swash"/></svg><p>The ledger holds no entries yet.</p></div>`;
-    return;
+  const sv = sortSel.value;
+  if(sv==='composer') list.sort((a,b)=>a.composer.localeCompare(b.composer));
+  else if(sv==='title') list.sort((a,b)=>a.work.localeCompare(b.work));
+  else if(sv==='rating') list.sort((a,b)=>b.rating-a.rating);
+  else list.sort((a,b)=>a.idx-b.idx);
+
+  const listEl = document.getElementById('list');
+  if(!list.length){ listEl.innerHTML = '<div class="empty">No recordings match. The house is quiet.</div>'; }
+  else {
+    let html=''; let curEra=null;
+    list.forEach(w=>{
+      if(sv==='era' && w.era!==curEra){ curEra=w.era; html+=`<div class="era-tier"><h2 class="chrome">${curEra}</h2></div>`; }
+      html += rowHtml(w);
+    });
+    listEl.innerHTML = html;
   }
-  if (!works.length) {
-    const filtered = state.statusFilter !== 'all' || state.eraFilter !== 'all' || state.query.trim();
-    els.list.innerHTML = `<div class="empty-state"><svg class="empty-illustration" viewBox="0 0 74 20" fill="none" stroke="var(--gilt)" stroke-width="1.4" stroke-linecap="round"><use href="#swash"/></svg><p>No entry in the ledger answers to this search.</p>${filtered ? '<button id="clearFiltersBtn">Clear the filters</button>' : ''}</div>`;
-    const clearBtn = document.getElementById('clearFiltersBtn');
-    if (clearBtn) clearBtn.onclick = () => { state.statusFilter = 'all'; state.eraFilter = 'all'; state.query = ''; els.searchInput.value = ''; renderStatusChips(); renderEraChips(); render(); };
-    return;
-  }
-  const eras = eraOrder().filter(e => works.some(w => w.eraId === e.id));
-  let html = '';
-  for (const era of eras) {
-    const eraWorks = works.filter(w => w.eraId === era.id);
-    const owned = eraWorks.filter(w => w.status === 'owned').length;
-    html += `<section class="era-section"><div class="era-head"><h2>${escapeHtml(era.name)}</h2><span class="era-progress">${owned} of ${eraWorks.length} sealed</span></div><div class="work-list">`;
-    eraWorks.forEach((w, i) => { html += workCard(w, i); });
-    html += `</div></section>`;
-  }
-  els.list.innerHTML = html;
-  els.list.querySelectorAll('.work-card').forEach(card => {
-    const id = card.dataset.id;
-    const work = state.works.find(w => w.id === id);
-    card.querySelector('.expand-btn').onclick = () => {
-      if (state.openIds.has(id)) state.openIds.delete(id); else state.openIds.add(id);
-      card.classList.toggle('open');
-      if (state.openIds.has(id) && work) loadWorkDetail(card, work);
-    };
-    if (state.openIds.has(id) && work) loadWorkDetail(card, work);
-    wireDetailButtons(card, work);
+
+  listEl.querySelectorAll('.seal').forEach(s=>s.addEventListener('click',()=>{
+    const w = works.find(x=>x.id===s.dataset.id);
+    w.owned = !w.owned; saveMark(w.id,{owned:w.owned}); render(); renderStats();
+  }));
+  listEl.querySelectorAll('.stars').forEach(group=>{
+    group.querySelectorAll('span').forEach(sp=>sp.addEventListener('click',()=>{
+      const w = works.find(x=>x.id===group.dataset.id);
+      const n = parseInt(sp.dataset.n,10);
+      w.rating = (w.rating===n)? 0 : n;
+      saveMark(w.id,{rating:w.rating}); render();
+    }));
   });
+  listEl.querySelectorAll('.notes').forEach(ta=>ta.addEventListener('change',()=>{
+    const w = works.find(x=>x.id===ta.dataset.id);
+    w.notes = ta.value; saveMark(w.id,{notes:w.notes});
+  }));
+
+  document.getElementById('footCount').textContent = `${list.length} of ${works.length} recordings shown`;
 }
 
-async function loadWorkDetail(card, work) {
-  const artSlot = card.querySelector('.detail-art');
-  if (!artSlot) return;
-  const cached = state.artwork[work.id];
-  if (cached) { paintArtwork(artSlot, cached, work); return; }
-  artSlot.classList.add('loading');
-  const result = await lookupArtwork(work);
-  artSlot.classList.remove('loading');
-  if (result) paintArtwork(artSlot, result, work);
-  else artSlot.innerHTML = '<span class="detail-art-fallback">Artwork could not be reached. <button class="retry-link" data-retry-art>Try again</button></span>';
-  wireDetailButtons(card, work);
+function renderStats(){
+  const total = works.length;
+  const owned = works.filter(w=>w.owned).length;
+  const pct = total? Math.round(owned/total*100):0;
+  const rated = works.filter(w=>w.rating>0).length;
+  document.getElementById('statRail').innerHTML = `
+    <div class="s"><b>${owned}</b>Seated</div>
+    <div class="s"><b>${total-owned}</b>Waiting list</div>
+    <div class="s"><b>${pct}%</b>Collection complete</div>
+    <div class="s"><b>${rated}</b>Rated</div>
+    <div class="s"><b>${eraOrder.length}</b>Programme sections</div>
+  `;
 }
 
-function paintArtwork(slot, result, work) {
-  const card = slot.closest('.work-card');
-  if (result === 'notfound' || !result.artworkUrl) {
-    slot.innerHTML = '<span class="detail-art-fallback">No cover found in the archive for this recording.</span>';
-    slot.removeAttribute('data-has-art');
-  } else {
-    slot.innerHTML = `<img src="${escapeHtml(result.artworkUrl)}" alt="Cover art for ${escapeHtml(work.work)}. Click to ask the Archive about it." loading="lazy" width="120" height="120">`;
-    slot.setAttribute('data-has-art', '1');
-  }
-  const linksSlot = card && card.querySelector('.detail-links');
-  if (linksSlot) { linksSlot.innerHTML = '<span class="ai-status">Resolving streaming links\u2026</span>'; renderLinks(linksSlot, work, result); }
+function download(filename, content, type){
+  const blob = new Blob([content], {type});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
-async function renderLinks(slot, work, artwork) {
-  const appleUrl = artwork && artwork !== 'notfound' && artwork.appleMusicUrl;
-  const [spotifyUrl, ytResult] = await Promise.all([lookupSpotifyAlbum(work), lookupYoutubeVideo(work)]);
-  slot.innerHTML = `
-    <a class="service-link apple" ${appleUrl ? `href="${escapeHtml(appleUrl)}"` : 'aria-disabled="true"'} target="_blank" rel="noopener">Apple Music ${appleUrl ? '' : '<span class="svc-note">(no match)</span>'}</a>
-    <a class="service-link spotify" href="${escapeHtml(spotifyUrl || spotifySearchUrl(work))}" target="_blank" rel="noopener">Spotify ${spotifyUrl ? '' : '<span class="svc-note">(search)</span>'}</a>
-    <a class="service-link youtube" href="${escapeHtml(ytResult ? ytResult.url : youtubeMusicSearchUrl(work))}" target="_blank" rel="noopener">YouTube Music ${ytResult ? '<span class="svc-note">(closest match)</span>' : '<span class="svc-note">(search)</span>'}</a>`;
-}
-
-function wireDetailButtons(card, work) {
-  if (!card || !work) return;
-  const retryArt = card.querySelector('[data-retry-art]');
-  if (retryArt) retryArt.onclick = () => loadWorkDetail(card, work);
-  const askBtn = card.querySelector('.ask-ai-btn');
-  if (askBtn) askBtn.onclick = () => runAiDescription(card, work, false);
-  const regenBtn = card.querySelector('.regen-btn');
-  if (regenBtn) regenBtn.onclick = () => runAiDescription(card, work, true);
-  const art = card.querySelector('.detail-art[data-has-art="1"]');
-  if (art) art.onclick = () => { if (!state.aiDescriptions[aiCacheKey(work)]) runAiDescription(card, work, false); };
-}
-
-function aiCacheKey(work) { const { model } = getActiveAiProfile(); return `${work.id}::${model || 'default'}`; }
-
-async function runAiDescription(card, work, forceRegen) {
-  const slot = card.querySelector('.ai-desc');
-  if (!slot) return;
-  const cacheKey = aiCacheKey(work);
-  if (!forceRegen && state.aiDescriptions[cacheKey]) { renderAiSlot(slot, state.aiDescriptions[cacheKey]); return; }
-  if (!allAiProfiles().length) { openSettings('An archivist\u2019s key is required before the counsel can be consulted.'); return; }
-  if (state.aiInFlight.has(work.id)) return;
-  state.aiInFlight.add(work.id);
-  slot.innerHTML = '<span class="ai-status">Consulting the archive\u2026</span>';
-  try {
-    const { text, model } = await generateAiDescription(work);
-    const entry = { text, model, ts: Date.now() };
-    state.aiDescriptions[cacheKey] = entry;
-    lsSet(KEY_AI_DESC_CACHE, state.aiDescriptions);
-    renderAiSlot(slot, entry);
-  } catch (err) {
-    slot.innerHTML = `<span class="ai-status error">${escapeHtml(describeAiError(err))} <button class="retry-link" data-retry-ai>Try again</button></span>`;
-    const retryAi = slot.querySelector('[data-retry-ai]');
-    if (retryAi) retryAi.onclick = () => runAiDescription(card, work, forceRegen);
-  } finally { state.aiInFlight.delete(work.id); }
-}
-
-function renderAiSlot(slot, entry) {
-  slot.innerHTML = `<p class="ai-text">${escapeHtml(entry.text)}</p><div class="ai-row"><span class="ai-meta">${escapeHtml(entry.model || '')}</span><button class="regen-btn">Ask again</button></div>`;
-  const card = slot.closest('.work-card');
-  const work = card && state.works.find(w => w.id === card.dataset.id);
-  const regenBtn = slot.querySelector('.regen-btn');
-  if (regenBtn && work) regenBtn.onclick = () => runAiDescription(card, work, true);
-}
-
-function workCard(w, i) {
-  const open = state.openIds.has(w.id);
-  const recordings = w.recordings.map(r => `<div class="recording-row ${r.tag === 'Alt' ? 'alt' : ''}"><span class="recording-tag">${r.tag}</span><span class="recording-text">${escapeHtml(r.text)}</span></div>`).join('');
-  const cachedArt = state.artwork[w.id];
-  const cachedAi = state.aiDescriptions[aiCacheKey(w)];
-  const hasArt = cachedArt && cachedArt !== 'notfound' && cachedArt.artworkUrl;
-  return `<article class="work-card ${open ? 'open' : ''}" data-id="${w.id}" style="animation-delay:${Math.min(i * 40, 240)}ms">
-    <div class="work-top">
-      <span class="status-dot ${w.status}" aria-hidden="true"></span>
-      <div class="work-main">
-        <h3 class="work-title"><span class="work-composer">${escapeHtml(w.composer)}</span> \u2013 ${escapeHtml(w.work)}</h3>
-        <div class="work-meta">${w.durationLabel ? escapeHtml(w.durationLabel) : ''}</div>
-      </div>
-      <button class="expand-btn" aria-label="Show recordings consulted" aria-expanded="${open}">
-        <svg viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1.5 6 6.5 11 1.5"/></svg>
-      </button>
-    </div>
-    <div class="recordings"><div class="recordings-inner">
-      <div class="detail-row">
-        <div class="detail-art${cachedArt ? '' : ' loading'}" ${hasArt ? 'data-has-art="1"' : ''}>${cachedArt ? (cachedArt === 'notfound' ? '<span class="detail-art-fallback">No cover found in the archive for this recording.</span>' : `<img src="${escapeHtml(cachedArt.artworkUrl || '')}" alt="Cover art for ${escapeHtml(w.work)}. Click to ask the Archive about it." loading="lazy" width="120" height="120">`) : ''}</div>
-        <div class="detail-main">
-          <div class="detail-links"></div>
-          <div class="ai-desc">${cachedAi ? `<p class="ai-text">${escapeHtml(cachedAi.text)}</p><div class="ai-row"><span class="ai-meta">${escapeHtml(cachedAi.model || '')}</span><button class="regen-btn">Ask again</button></div>` : '<button class="ask-ai-btn">Ask the Archive</button>'}</div>
-        </div>
-      </div>
-      ${recordings || '<span class="recording-text">No recording yet set down.</span>'}
-    </div></div>
-  </article>`;
-}
-
-async function refresh(forcePath) {
-  renderSkeleton();
-  try {
-    const { works, stale, path } = await loadManifest(forcePath);
-    clearSkeleton();
-    state.works = works;
-    renderStatusChips();
-    renderEraChips();
-    showBanner(stale ? `Showing cached data \u2014 "${path || 'the ledger'}" unreachable.` : '');
-    render();
-  } catch (err) {
-    clearSkeleton();
-    showBanner(describeError(err), true);
-    els.list.innerHTML = '';
-    els.counterPill.textContent = '';
-  }
-}
-
-els.reloadBtn.onclick = () => refresh();
-const debouncedSearch = debounce(() => render(), 120);
-els.searchInput.addEventListener('input', () => { state.query = els.searchInput.value; debouncedSearch(); });
-els.searchInput.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && els.searchInput.value) { e.stopPropagation(); els.searchInput.value = ''; state.query = ''; render(); }
+document.getElementById('exportJson').addEventListener('click',()=>{
+  download('collection.json', JSON.stringify(works.map(({idx,id,...rest})=>rest),null,2), 'application/json');
 });
-document.addEventListener('keydown', e => {
-  if (e.key === '/' && document.activeElement !== els.searchInput && !els.settingsModal.classList.contains('hidden') === false) {
-    const tag = document.activeElement && document.activeElement.tagName;
-    if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') { e.preventDefault(); els.searchInput.focus(); }
-  }
+document.getElementById('exportCsv').addEventListener('click',()=>{
+  const rows = [['Era','Composer','Work','Duration','Owned','Rating','Best','Alts','Notes']];
+  works.forEach(w=>rows.push([w.era,w.composer,w.work,w.duration,w.owned,w.rating,w.best,(w.alts||[]).join(' | '),w.notes]));
+  const csv = rows.map(r=>r.map(c=>'"'+String(c??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  download('collection.csv', csv, 'text/csv');
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  try{
+    if(confirm('Clear all your marks (owned flips, ratings, notes) in this browser? This cannot be undone.')){
+      localStorage.removeItem(KEY); location.reload();
+    }
+  }catch(e){}
 });
 
-// ---- settings modal ----
-const settingsEls = {
-  manifestPath: document.getElementById('manifestPathInput'),
-  redetect: document.getElementById('redetectBtn'),
-  base: document.getElementById('aiBaseInput'),
-  key: document.getElementById('aiKeyInput'),
-  modelSelect: document.getElementById('aiModelSelect'),
-  fetchBtn: document.getElementById('fetchModelsBtn'),
-  addProviderBtn: document.getElementById('addProviderBtn'),
-  providerList: document.getElementById('providerList'),
-  spotifyToken: document.getElementById('spotifyTokenInput'),
-  youtubeKey: document.getElementById('youtubeKeyInput'),
-  status: document.getElementById('settingsStatus'),
-  save: document.getElementById('settingsSave'),
-  clear: document.getElementById('settingsClear'),
-  close: document.getElementById('settingsClose'),
-};
-
-function renderProviderList() {
-  const list = getFallbackProviders();
-  settingsEls.providerList.innerHTML = list.length
-    ? list.map((p, i) => `<div class="preset-btn" style="display:inline-flex;align-items:center;gap:6px;margin:0 4px 4px 0;">${escapeHtml(p.model)} <button data-remove-provider="${i}" style="color:var(--wax-catch);font-weight:700;">\u00d7</button></div>`).join('')
-    : '';
-  settingsEls.providerList.querySelectorAll('[data-remove-provider]').forEach(btn => {
-    btn.onclick = () => { const idx = +btn.dataset.removeProvider; const l = getFallbackProviders(); l.splice(idx, 1); lsSet(KEY_AI_PROVIDERS, l); renderProviderList(); };
-  });
-}
-
-function openSettings(note) {
-  const cfg = getActiveAiProfile();
-  settingsEls.manifestPath.value = lsGet(KEY_MANIFEST_PATH, '');
-  settingsEls.base.value = cfg.base === DEFAULT_AI_BASE ? '' : cfg.base;
-  settingsEls.key.value = cfg.key;
-  settingsEls.spotifyToken.value = lsGet(KEY_SPOTIFY_TOKEN, '');
-  settingsEls.youtubeKey.value = lsGet(KEY_YOUTUBE_KEY, '');
-  settingsEls.status.textContent = note || '';
-  if (cfg.model) settingsEls.modelSelect.innerHTML = `<option value="${escapeHtml(cfg.model)}">${escapeHtml(cfg.model)}</option>`;
-  renderProviderList();
-  els.settingsModal.classList.remove('hidden');
-  settingsEls.key.focus();
-}
-function closeSettings() { els.settingsModal.classList.add('hidden'); }
-
-els.settingsBtn.onclick = () => openSettings();
-settingsEls.close.onclick = closeSettings;
-els.settingsModal.addEventListener('click', e => { if (e.target === els.settingsModal) closeSettings(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !els.settingsModal.classList.contains('hidden')) closeSettings(); });
-
-document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => { btn.onclick = () => { settingsEls.base.value = btn.dataset.preset; }; });
-
-settingsEls.redetect.onclick = async () => {
-  lsSet(KEY_MANIFEST_PATH, settingsEls.manifestPath.value.trim() || '');
-  settingsEls.status.textContent = 'Re-detecting\u2026';
-  try {
-    const { path } = await discoverManifest(settingsEls.manifestPath.value.trim() || undefined);
-    settingsEls.status.textContent = `Found "${path}".`;
-    settingsEls.manifestPath.value = path;
-  } catch (err) { settingsEls.status.textContent = describeError(err); }
-};
-
-settingsEls.fetchBtn.onclick = async () => {
-  const key = settingsEls.key.value.trim();
-  const base = settingsEls.base.value.trim() || DEFAULT_AI_BASE;
-  if (!key) { settingsEls.status.textContent = 'Enter a key first.'; return; }
-  settingsEls.status.textContent = 'Fetching available models\u2026';
-  settingsEls.fetchBtn.disabled = true;
-  try {
-    const models = await fetchAvailableModels(base, key);
-    if (!models.length) { settingsEls.status.textContent = 'The provider returned no models.'; return; }
-    settingsEls.modelSelect.innerHTML = models.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.id)}${m.free ? ' (free)' : ''}</option>`).join('');
-    const savedModel = lsGet(KEY_AI_MODEL, '');
-    if (savedModel && models.some(m => m.id === savedModel)) settingsEls.modelSelect.value = savedModel;
-    settingsEls.status.textContent = `${models.length} models available.`;
-  } catch (err) { settingsEls.status.textContent = describeAiError(err); }
-  finally { settingsEls.fetchBtn.disabled = false; }
-};
-
-settingsEls.addProviderBtn.onclick = () => {
-  const key = settingsEls.key.value.trim(); const base = settingsEls.base.value.trim() || DEFAULT_AI_BASE; const model = settingsEls.modelSelect.value;
-  if (!key || !model) { settingsEls.status.textContent = 'Set a key and pick a model before saving it as a fallback.'; return; }
-  const list = getFallbackProviders(); list.push({ base, key, model }); lsSet(KEY_AI_PROVIDERS, list);
-  renderProviderList();
-  settingsEls.status.textContent = 'Saved as fallback provider.';
-};
-
-settingsEls.save.onclick = () => {
-  lsSet(KEY_AI_KEY, settingsEls.key.value.trim());
-  lsSet(KEY_AI_BASE, settingsEls.base.value.trim() || DEFAULT_AI_BASE);
-  lsSet(KEY_AI_MODEL, settingsEls.modelSelect.value);
-  lsSet(KEY_MANIFEST_PATH, settingsEls.manifestPath.value.trim() || '');
-  lsSet(KEY_SPOTIFY_TOKEN, settingsEls.spotifyToken.value.trim());
-  lsSet(KEY_YOUTUBE_KEY, settingsEls.youtubeKey.value.trim());
-  settingsEls.status.textContent = 'Saved.';
-  setTimeout(() => { closeSettings(); render(); }, 400);
-};
-
-settingsEls.clear.onclick = () => {
-  [KEY_AI_KEY, KEY_AI_MODEL, KEY_AI_PROVIDERS, KEY_SPOTIFY_TOKEN, KEY_YOUTUBE_KEY].forEach(k => lsSet(k, k === KEY_AI_PROVIDERS ? [] : ''));
-  settingsEls.key.value = ''; settingsEls.spotifyToken.value = ''; settingsEls.youtubeKey.value = '';
-  settingsEls.modelSelect.innerHTML = '<option value="">\u2014 fetch models first \u2014</option>';
-  renderProviderList();
-  settingsEls.status.textContent = 'All keys cleared from this browser.';
-};
-
-refresh();
+render(); renderStats();
+})();
 </script>
 </body>
 </html>
